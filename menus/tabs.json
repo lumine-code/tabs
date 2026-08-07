@@ -13,6 +13,9 @@
   "context-menu": {
     ".tab": [
       {
+        "type": "separator"
+      },
+      {
         "label": "Close Tab",
         "command": "tabs:close-tab"
       },
@@ -59,6 +62,9 @@
             "command": "tabs:split-right"
           }
         ]
+      },
+      {
+        "type": "separator"
       }
     ],
     ".tab.texteditor": [
@@ -75,14 +81,26 @@
     ],
     ".tab.pending-tab": [
       {
+        "type": "separator"
+      },
+      {
         "label": "Keep Pending Tab",
         "command": "tabs:keep-pending-tab"
+      },
+      {
+        "type": "separator"
       }
     ],
     ".tab-bar": [
       {
+        "type": "separator"
+      },
+      {
         "label": "Reopen Closed Tab",
         "command": "pane:reopen-closed-item"
+      },
+      {
+        "type": "separator"
       }
     ]
   }
