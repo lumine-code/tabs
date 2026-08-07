@@ -1,15 +1,4 @@
 {
-  "menu": [
-    {
-      "label": "File",
-      "submenu": [
-        {
-          "label": "Close All Tabs",
-          "command": "tabs:close-all-tabs"
-        }
-      ]
-    }
-  ],
   "context-menu": {
     ".tab": [
       {
