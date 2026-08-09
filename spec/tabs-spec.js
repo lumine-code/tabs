@@ -936,12 +936,12 @@ describe("TabBarView", () => {
         beforeEach(() => {
           triggerClickEvent(tabBar.tabForItem(item1).element, { button: 2 });
           expect(atom.workspace.getCenter().getPanes().length).toBe(1);
-          spyOn(atom, "open");
+          spyOn(atom.app, "openWindow");
         });
 
         it("opens new window, closes current tab", () => {
           atom.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
-          expect(atom.open).toHaveBeenCalled();
+          expect(atom.app.openWindow).toHaveBeenCalled();
 
           expect(pane.getItems().length).toBe(2);
           expect(tabBar.getTabs().length).toBe(2);
@@ -965,9 +965,9 @@ describe("TabBarView", () => {
         // See #309 for background
 
         it("does nothing", () => {
-          spyOn(atom, "open");
+          spyOn(atom.app, "openWindow");
           atom.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
-          expect(atom.open).not.toHaveBeenCalled();
+          expect(atom.app.openWindow).not.toHaveBeenCalled();
         }));
     });
   });
