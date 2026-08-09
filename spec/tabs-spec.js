@@ -1513,7 +1513,11 @@ describe("TabBarView", () => {
           buildDragEvents(tabBar.tabAtIndex(1).element, tabBar.tabAtIndex(0).element),
         );
         tabBar.onDragStart(dragStartEvent);
-        atom.getCurrentWindow().webContents.send("tab:dropped", pane.id, 1);
+        tabBar.onDropOnOtherWindow({
+          targetWindowId: tabBar.getWindowId(),
+          fromPaneId: pane.id,
+          fromItemIndex: 1,
+        });
 
         // Can't spy on onDropOnOtherWindow since it's binded
         waitsFor("dragged pane item to be destroyed", () => pane.destroyItem.callCount === 1);
@@ -1543,7 +1547,11 @@ describe("TabBarView", () => {
           buildDragEvents(tabBar.tabAtIndex(1).element, tabBar.tabAtIndex(0).element),
         );
         tabBar.onDragStart(dragStartEvent);
-        atom.getCurrentWindow().webContents.send("tab:dropped", pane.id, 1);
+        tabBar.onDropOnOtherWindow({
+          targetWindowId: tabBar.getWindowId(),
+          fromPaneId: pane.id,
+          fromItemIndex: 1,
+        });
 
         // Can't spy on onDropOnOtherWindow since it's binded
         waitsFor("dragged pane item to be destroyed", () => pane.destroyItem.callCount === 1);
@@ -1570,7 +1578,11 @@ describe("TabBarView", () => {
           buildDragEvents(tabBar.tabAtIndex(1).element, tabBar.tabAtIndex(0).element),
         );
         tabBar.onDragStart(dragStartEvent);
-        atom.getCurrentWindow().webContents.send("tab:dropped", pane.id, 1);
+        tabBar.onDropOnOtherWindow({
+          targetWindowId: tabBar.getWindowId(),
+          fromPaneId: pane.id,
+          fromItemIndex: 1,
+        });
 
         // Can't spy on onDropOnOtherWindow since it's binded
         waitsFor("dragged pane item to be destroyed", () => pane.destroyItem.callCount === 1);

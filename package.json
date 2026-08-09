@@ -74,7 +74,6 @@
     }
   },
   "dependencies": {
-    "@electron/remote": "2.1.3",
     "@lumine-code/underscore-plus": "github:lumine-code/underscore-plus#9b0c8a6bc845c5ecd594d673ab97f4ddbe9e546f"
   },
   "devDependencies": {
