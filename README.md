@@ -16,11 +16,11 @@ To install `tabs` search for _tabs_ in the Install pane of the Lumine settings o
 
 ## Commands
 
-Commands available in `atom-workspace`:
+Commands available in `lumine-workspace`:
 
 - `tabs:close-all-tabs`: close every tab in every pane.
 
-Commands available in `atom-pane`:
+Commands available in `lumine-pane`:
 
 - `tabs:keep-pending-tab`: keep the active pending tab open,
 - `tabs:close-tab`: close the active tab,

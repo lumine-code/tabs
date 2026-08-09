@@ -1,32 +1,32 @@
 const path = require("path");
-const { Disposable } = require("atom");
+const { Disposable } = require("lumine");
 
 describe("tab icons", () => {
   let tab;
 
   beforeEach(() => {
-    waitsForPromise(() => atom.workspace.open(path.join(__dirname, "fixtures", "sample.js")));
+    waitsForPromise(() => lumine.workspace.open(path.join(__dirname, "fixtures", "sample.js")));
 
-    waitsForPromise(() => atom.packages.activatePackage("tabs"));
+    waitsForPromise(() => lumine.packages.activatePackage("tabs"));
 
     runs(() => {
       // The registry only repaints elements that are in the document, as they
       // are in a real window.
-      jasmine.attachToDOM(atom.workspace.getElement());
-      tab = atom.workspace.getElement().querySelector(".tab");
+      jasmine.attachToDOM(lumine.workspace.getElement());
+      tab = lumine.workspace.getElement().querySelector(".tab");
     });
   });
 
   const provide = (iconFor, extra = {}) =>
-    atom.packages.serviceHub.provide("icons.provider", "1.0.0", { iconFor, ...extra });
+    lumine.packages.serviceHub.provide("icons.provider", "1.0.0", { iconFor, ...extra });
 
   const tabFor = (item) => {
-    const tabs = atom.workspace.getElement().querySelectorAll(".tab");
+    const tabs = lumine.workspace.getElement().querySelectorAll(".tab");
     return Array.from(tabs).find((candidate) => candidate.item === item);
   };
 
   const addItem = (item) => {
-    const pane = atom.workspace.getActivePane();
+    const pane = lumine.workspace.getActivePane();
     pane.addItem(item);
     pane.activateItem(item);
     return tabFor(item);
@@ -47,7 +47,7 @@ describe("tab icons", () => {
   });
 
   it("hides the icon rather than dropping it when showIcons is off", () => {
-    atom.config.set("tabs.showIcons", false);
+    lumine.config.set("tabs.showIcons", false);
     expect(tab.itemTitle.classList.contains("hide-icon")).toBe(true);
     expect(tab.itemTitle.classList.contains("icon-file-text")).toBe(true);
   });

@@ -17,11 +17,11 @@ describe("Tabs package main", () => {
   let centerElement = null;
 
   beforeEach(() => {
-    centerElement = atom.workspace.getCenter().paneContainer.getElement();
+    centerElement = lumine.workspace.getCenter().paneContainer.getElement();
 
-    waitsForPromise(() => atom.workspace.open("sample.js"));
+    waitsForPromise(() => lumine.workspace.open("sample.js"));
 
-    waitsForPromise(() => atom.packages.activatePackage("tabs"));
+    waitsForPromise(() => lumine.packages.activatePackage("tabs"));
   });
 
   describe(".activate()", () =>
@@ -30,7 +30,7 @@ describe("Tabs package main", () => {
       expect(centerElement.querySelectorAll(".pane").length).toBe(1);
       expect(centerElement.querySelectorAll(".pane > .tab-bar").length).toBe(1);
 
-      const pane = atom.workspace.getActivePane();
+      const pane = lumine.workspace.getActivePane();
       pane.splitRight();
 
       expect(centerElement.querySelectorAll(".pane").length).toBe(2);
@@ -41,13 +41,13 @@ describe("Tabs package main", () => {
 
   describe(".deactivate()", () =>
     it("removes all tab bar views and stops adding them to new panes", () => {
-      const pane = atom.workspace.getActivePane();
+      const pane = lumine.workspace.getActivePane();
       pane.splitRight();
       jasmine.attachToDOM(centerElement);
       expect(centerElement.querySelectorAll(".pane").length).toBe(2);
       expect(centerElement.querySelectorAll(".pane > .tab-bar").length).toBe(2);
 
-      waitsForPromise(() => Promise.resolve(atom.packages.deactivatePackage("tabs"))); // Wrapped so works with Promise & non-Promise deactivate
+      waitsForPromise(() => Promise.resolve(lumine.packages.deactivatePackage("tabs"))); // Wrapped so works with Promise & non-Promise deactivate
 
       runs(() => {
         expect(centerElement.querySelectorAll(".pane").length).toBe(2);
@@ -147,15 +147,15 @@ describe("TabBarView", () => {
   }
 
   beforeEach(() => {
-    deserializerDisposable = atom.deserializers.add(TestView);
+    deserializerDisposable = lumine.deserializers.add(TestView);
     item1 = new TestView("Item 1", undefined, "squirrel", "sample.js");
     item2 = new TestView("Item 2");
 
-    waitsForPromise(() => atom.workspace.open("sample.js"));
+    waitsForPromise(() => lumine.workspace.open("sample.js"));
 
     runs(() => {
-      editor1 = atom.workspace.getActiveTextEditor();
-      pane = atom.workspace.getActivePane();
+      editor1 = lumine.workspace.getActiveTextEditor();
+      pane = lumine.workspace.getActivePane();
       pane.addItem(item1, { index: 0 });
       pane.addItem(item2, { index: 2 });
       pane.activateItem(item2);
@@ -332,10 +332,10 @@ describe("TabBarView", () => {
       let editor2 = null;
 
       waitsForPromise(() => {
-        if (atom.workspace.createItemForURI != null) {
-          return atom.workspace.createItemForURI("sample.txt").then((o) => (editor2 = o));
+        if (lumine.workspace.createItemForURI != null) {
+          return lumine.workspace.createItemForURI("sample.txt").then((o) => (editor2 = o));
         } else {
-          return atom.workspace
+          return lumine.workspace
             .open("sample.txt", { activateItem: false })
             .then((o) => (editor2 = o));
         }
@@ -350,7 +350,7 @@ describe("TabBarView", () => {
 
     describe("when addNewTabsAtEnd is set to true in package settings", () => {
       it("adds a tab for the new item at the end of the tab bar", () => {
-        atom.config.set("tabs.addNewTabsAtEnd", true);
+        lumine.config.set("tabs.addNewTabsAtEnd", true);
         const item3 = new TestView("Item 3");
         pane.activateItem(item3);
         expect(tabBar.element.querySelectorAll(".tab").length).toBe(4);
@@ -358,7 +358,7 @@ describe("TabBarView", () => {
       });
 
       it("puts the new tab at the last index of the pane's items", () => {
-        atom.config.set("tabs.addNewTabsAtEnd", true);
+        lumine.config.set("tabs.addNewTabsAtEnd", true);
         const item3 = new TestView("Item 3");
         // activate item1 so default is to add immediately after
         pane.activateItem(item1);
@@ -369,7 +369,7 @@ describe("TabBarView", () => {
 
     describe("when addNewTabsAtEnd is set to false in package settings", () =>
       it("adds a tab for the new item at the same index as the item in the pane", () => {
-        atom.config.set("tabs.addNewTabsAtEnd", false);
+        lumine.config.set("tabs.addNewTabsAtEnd", false);
         pane.activateItem(item1);
         const item3 = new TestView("Item 3");
         pane.activateItem(item3);
@@ -427,21 +427,21 @@ describe("TabBarView", () => {
 
       triggerClickEvent(tabBar.tabForItem(editor1).element, { button: 0 });
 
-      expect(atom.views.getView(editor1).contains(document.activeElement)).toBe(true);
+      expect(lumine.views.getView(editor1).contains(document.activeElement)).toBe(true);
     });
 
     it("can reorder tabs while the pane item has focus", () => {
       const paneElement = pane.getElement();
       paneElement.insertBefore(tabBar.element, paneElement.firstChild);
-      jasmine.attachToDOM(atom.workspace.getElement());
+      jasmine.attachToDOM(lumine.workspace.getElement());
       pane.activateItem(editor1);
       pane.activate();
 
-      const editorElement = atom.views.getView(editor1);
+      const editorElement = lumine.views.getView(editor1);
       editorElement.focus();
       const press = (key) =>
-        atom.keymaps.handleKeyboardEvent(
-          atom.keymaps.constructor.buildKeydownEvent(key, {
+        lumine.keymaps.handleKeyboardEvent(
+          lumine.keymaps.constructor.buildKeydownEvent(key, {
             ctrl: true,
             shift: true,
             target: document.activeElement,
@@ -594,12 +594,12 @@ describe("TabBarView", () => {
       expect(tabs[4].querySelector(".close-icon")).not.toEqual(null);
     });
 
-    if (atom.workspace.getRightDock == null) {
+    if (lumine.workspace.getRightDock == null) {
       return;
     }
     describe("in docks", () => {
       beforeEach(() => {
-        pane = atom.workspace.getRightDock().getActivePane();
+        pane = lumine.workspace.getRightDock().getActivePane();
         tabBar = new TabBarView(pane, "right");
       });
 
@@ -665,7 +665,7 @@ describe("TabBarView", () => {
       beforeEach(() => {
         spyOn(tabBar.tabForItem(item1), "updateIconVisibility").andCallThrough();
 
-        atom.config.set("tabs.showIcons", true);
+        lumine.config.set("tabs.showIcons", true);
 
         waitsFor(() => tabBar.tabForItem(item1).updateIconVisibility.callCount > 0);
 
@@ -678,7 +678,7 @@ describe("TabBarView", () => {
         ));
 
       it("hides the icon from the tab when showIcon is changed to false", () => {
-        atom.config.set("tabs.showIcons", false);
+        lumine.config.set("tabs.showIcons", false);
 
         waitsFor(() => tabBar.tabForItem(item1).updateIconVisibility.callCount > 0);
 
@@ -694,7 +694,7 @@ describe("TabBarView", () => {
       beforeEach(() => {
         spyOn(tabBar.tabForItem(item1), "updateIconVisibility").andCallThrough();
 
-        atom.config.set("tabs.showIcons", false);
+        lumine.config.set("tabs.showIcons", false);
 
         waitsFor(() => tabBar.tabForItem(item1).updateIconVisibility.callCount > 0);
 
@@ -707,7 +707,7 @@ describe("TabBarView", () => {
         ));
 
       it("shows the icon on the tab when showIcon is changed to true", () => {
-        atom.config.set("tabs.showIcons", true);
+        lumine.config.set("tabs.showIcons", true);
 
         waitsFor(() => tabBar.tabForItem(item1).updateIconVisibility.callCount > 0);
 
@@ -761,7 +761,7 @@ describe("TabBarView", () => {
     // behavior is independent of addNewTabs config
     describe("when addNewTabsAtEnd is set to true in package settings", () =>
       it("updates the order of the tabs to match the new item order", () => {
-        atom.config.set("tabs.addNewTabsAtEnd", true);
+        lumine.config.set("tabs.addNewTabsAtEnd", true);
         expect(tabBar.getTabs().map((tab) => tab.element.textContent)).toEqual([
           "Item 1",
           "sample.js",
@@ -789,7 +789,7 @@ describe("TabBarView", () => {
 
     describe("when addNewTabsAtEnd is set to false in package settings", () =>
       it("updates the order of the tabs to match the new item order", () => {
-        atom.config.set("tabs.addNewTabsAtEnd", false);
+        lumine.config.set("tabs.addNewTabsAtEnd", false);
         expect(tabBar.getTabs().map((tab) => tab.element.textContent)).toEqual([
           "Item 1",
           "sample.js",
@@ -825,7 +825,7 @@ describe("TabBarView", () => {
     describe("when tabs:close-tab is fired", () =>
       it("closes the active tab", () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
-        atom.commands.dispatch(tabBar.element, "tabs:close-tab");
+        lumine.commands.dispatch(tabBar.element, "tabs:close-tab");
         expect(pane.getItems().length).toBe(2);
         expect(pane.getItems().indexOf(item2)).toBe(-1);
         expect(tabBar.getTabs().length).toBe(2);
@@ -835,7 +835,7 @@ describe("TabBarView", () => {
     describe("when tabs:close-other-tabs is fired", () =>
       it("closes all other tabs except the active tab", () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
-        atom.commands.dispatch(tabBar.element, "tabs:close-other-tabs");
+        lumine.commands.dispatch(tabBar.element, "tabs:close-other-tabs");
         expect(pane.getItems().length).toBe(1);
         expect(tabBar.getTabs().length).toBe(1);
         expect(tabBar.element.textContent).not.toMatch("sample.js");
@@ -846,7 +846,7 @@ describe("TabBarView", () => {
       it("closes only the tabs to the right of the active tab", () => {
         pane.activateItem(editor1);
         triggerClickEvent(tabBar.tabForItem(editor1).element, { button: 2 });
-        atom.commands.dispatch(tabBar.element, "tabs:close-tabs-to-right");
+        lumine.commands.dispatch(tabBar.element, "tabs:close-tabs-to-right");
         expect(pane.getItems().length).toBe(2);
         expect(tabBar.getTabs().length).toBe(2);
         expect(tabBar.element.textContent).not.toMatch("Item 2");
@@ -857,7 +857,7 @@ describe("TabBarView", () => {
       it("closes only the tabs to the left of the active tab", () => {
         pane.activateItem(editor1);
         triggerClickEvent(tabBar.tabForItem(editor1).element, { button: 2 });
-        atom.commands.dispatch(tabBar.element, "tabs:close-tabs-to-left");
+        lumine.commands.dispatch(tabBar.element, "tabs:close-tabs-to-left");
         expect(pane.getItems().length).toBe(2);
         expect(tabBar.getTabs().length).toBe(2);
         expect(tabBar.element.textContent).toMatch("Item 2");
@@ -867,14 +867,14 @@ describe("TabBarView", () => {
     describe("when tabs:close-all-tabs is fired", () =>
       it("closes all the tabs", () => {
         expect(pane.getItems().length).toBeGreaterThan(0);
-        atom.commands.dispatch(tabBar.element, "tabs:close-all-tabs");
+        lumine.commands.dispatch(tabBar.element, "tabs:close-all-tabs");
         expect(pane.getItems().length).toBe(0);
       }));
 
     describe("when tabs:close-saved-tabs is fired", () =>
       it("closes all the saved tabs", () => {
         item1.isModified = () => true;
-        atom.commands.dispatch(tabBar.element, "tabs:close-saved-tabs");
+        lumine.commands.dispatch(tabBar.element, "tabs:close-saved-tabs");
         expect(pane.getItems().length).toBe(1);
         expect(pane.getItems()[0]).toBe(item1);
       }));
@@ -882,12 +882,12 @@ describe("TabBarView", () => {
     describe("when tabs:split-up is fired", () =>
       it("splits the selected tab up", () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
-        expect(atom.workspace.getCenter().getPanes().length).toBe(1);
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
 
-        atom.commands.dispatch(tabBar.element, "tabs:split-up");
-        expect(atom.workspace.getCenter().getPanes().length).toBe(2);
-        expect(atom.workspace.getCenter().getPanes()[1]).toBe(pane);
-        expect(atom.workspace.getCenter().getPanes()[0].getItems()[0].getTitle()).toBe(
+        lumine.commands.dispatch(tabBar.element, "tabs:split-up");
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(2);
+        expect(lumine.workspace.getCenter().getPanes()[1]).toBe(pane);
+        expect(lumine.workspace.getCenter().getPanes()[0].getItems()[0].getTitle()).toBe(
           item2.getTitle(),
         );
       }));
@@ -895,12 +895,12 @@ describe("TabBarView", () => {
     describe("when tabs:split-down is fired", () =>
       it("splits the selected tab down", () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
-        expect(atom.workspace.getCenter().getPanes().length).toBe(1);
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
 
-        atom.commands.dispatch(tabBar.element, "tabs:split-down");
-        expect(atom.workspace.getCenter().getPanes().length).toBe(2);
-        expect(atom.workspace.getCenter().getPanes()[0]).toBe(pane);
-        expect(atom.workspace.getCenter().getPanes()[1].getItems()[0].getTitle()).toBe(
+        lumine.commands.dispatch(tabBar.element, "tabs:split-down");
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(2);
+        expect(lumine.workspace.getCenter().getPanes()[0]).toBe(pane);
+        expect(lumine.workspace.getCenter().getPanes()[1].getItems()[0].getTitle()).toBe(
           item2.getTitle(),
         );
       }));
@@ -908,12 +908,12 @@ describe("TabBarView", () => {
     describe("when tabs:split-left is fired", () =>
       it("splits the selected tab to the left", () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
-        expect(atom.workspace.getCenter().getPanes().length).toBe(1);
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
 
-        atom.commands.dispatch(tabBar.element, "tabs:split-left");
-        expect(atom.workspace.getCenter().getPanes().length).toBe(2);
-        expect(atom.workspace.getCenter().getPanes()[1]).toBe(pane);
-        expect(atom.workspace.getCenter().getPanes()[0].getItems()[0].getTitle()).toBe(
+        lumine.commands.dispatch(tabBar.element, "tabs:split-left");
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(2);
+        expect(lumine.workspace.getCenter().getPanes()[1]).toBe(pane);
+        expect(lumine.workspace.getCenter().getPanes()[0].getItems()[0].getTitle()).toBe(
           item2.getTitle(),
         );
       }));
@@ -921,12 +921,12 @@ describe("TabBarView", () => {
     describe("when tabs:split-right is fired", () =>
       it("splits the selected tab to the right", () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
-        expect(atom.workspace.getCenter().getPanes().length).toBe(1);
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
 
-        atom.commands.dispatch(tabBar.element, "tabs:split-right");
-        expect(atom.workspace.getCenter().getPanes().length).toBe(2);
-        expect(atom.workspace.getCenter().getPanes()[0]).toBe(pane);
-        expect(atom.workspace.getCenter().getPanes()[1].getItems()[0].getTitle()).toBe(
+        lumine.commands.dispatch(tabBar.element, "tabs:split-right");
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(2);
+        expect(lumine.workspace.getCenter().getPanes()[0]).toBe(pane);
+        expect(lumine.workspace.getCenter().getPanes()[1].getItems()[0].getTitle()).toBe(
           item2.getTitle(),
         );
       }));
@@ -935,13 +935,13 @@ describe("TabBarView", () => {
       describe("by right-clicking on a tab", () => {
         beforeEach(() => {
           triggerClickEvent(tabBar.tabForItem(item1).element, { button: 2 });
-          expect(atom.workspace.getCenter().getPanes().length).toBe(1);
-          spyOn(atom.app, "openWindow");
+          expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
+          spyOn(lumine.app, "openWindow");
         });
 
         it("opens new window, closes current tab", () => {
-          atom.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
-          expect(atom.app.openWindow).toHaveBeenCalled();
+          lumine.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
+          expect(lumine.app.openWindow).toHaveBeenCalled();
 
           expect(pane.getItems().length).toBe(2);
           expect(tabBar.getTabs().length).toBe(2);
@@ -953,7 +953,7 @@ describe("TabBarView", () => {
           // mouseenter (which will get emitted when going to right-click the tab) fixes the tab widths
           // Make sure after the command is executed the widths are reset
           triggerMouseEvent("mouseenter", tabBar.element);
-          atom.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
+          lumine.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
 
           jasmine.attachToDOM(tabBar.element);
           expect(tabBar.tabAtIndex(0).element.style.maxWidth).toBe("");
@@ -965,9 +965,9 @@ describe("TabBarView", () => {
         // See #309 for background
 
         it("does nothing", () => {
-          spyOn(atom.app, "openWindow");
-          atom.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
-          expect(atom.app.openWindow).not.toHaveBeenCalled();
+          spyOn(lumine.app, "openWindow");
+          lumine.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
+          expect(lumine.app.openWindow).not.toHaveBeenCalled();
         }));
     });
   });
@@ -979,7 +979,7 @@ describe("TabBarView", () => {
 
     describe("when tabs:close-tab is fired", () => {
       it("closes the active tab", () => {
-        atom.commands.dispatch(paneElement, "tabs:close-tab");
+        lumine.commands.dispatch(paneElement, "tabs:close-tab");
         expect(pane.getItems().length).toBe(2);
         expect(pane.getItems().indexOf(item2)).toBe(-1);
         expect(tabBar.getTabs().length).toBe(2);
@@ -987,9 +987,9 @@ describe("TabBarView", () => {
       });
 
       it("does nothing if no tabs are open", () => {
-        atom.commands.dispatch(paneElement, "tabs:close-tab");
-        atom.commands.dispatch(paneElement, "tabs:close-tab");
-        atom.commands.dispatch(paneElement, "tabs:close-tab");
+        lumine.commands.dispatch(paneElement, "tabs:close-tab");
+        lumine.commands.dispatch(paneElement, "tabs:close-tab");
+        lumine.commands.dispatch(paneElement, "tabs:close-tab");
         expect(pane.getItems().length).toBe(0);
         expect(tabBar.getTabs().length).toBe(0);
       });
@@ -997,7 +997,7 @@ describe("TabBarView", () => {
 
     describe("when tabs:close-other-tabs is fired", () =>
       it("closes all other tabs except the active tab", () => {
-        atom.commands.dispatch(paneElement, "tabs:close-other-tabs");
+        lumine.commands.dispatch(paneElement, "tabs:close-other-tabs");
         expect(pane.getItems().length).toBe(1);
         expect(tabBar.getTabs().length).toBe(1);
         expect(tabBar.element.textContent).not.toMatch("sample.js");
@@ -1007,7 +1007,7 @@ describe("TabBarView", () => {
     describe("when tabs:close-tabs-to-right is fired", () =>
       it("closes only the tabs to the right of the active tab", () => {
         pane.activateItem(editor1);
-        atom.commands.dispatch(paneElement, "tabs:close-tabs-to-right");
+        lumine.commands.dispatch(paneElement, "tabs:close-tabs-to-right");
         expect(pane.getItems().length).toBe(2);
         expect(tabBar.getTabs().length).toBe(2);
         expect(tabBar.element.textContent).not.toMatch("Item 2");
@@ -1017,14 +1017,14 @@ describe("TabBarView", () => {
     describe("when tabs:close-all-tabs is fired", () =>
       it("closes all the tabs", () => {
         expect(pane.getItems().length).toBeGreaterThan(0);
-        atom.commands.dispatch(paneElement, "tabs:close-all-tabs");
+        lumine.commands.dispatch(paneElement, "tabs:close-all-tabs");
         expect(pane.getItems().length).toBe(0);
       }));
 
     describe("when tabs:close-saved-tabs is fired", () =>
       it("closes all the saved tabs", () => {
         item1.isModified = () => true;
-        atom.commands.dispatch(paneElement, "tabs:close-saved-tabs");
+        lumine.commands.dispatch(paneElement, "tabs:close-saved-tabs");
         expect(pane.getItems().length).toBe(1);
         expect(pane.getItems()[0]).toBe(item1);
       }));
@@ -1243,7 +1243,7 @@ describe("TabBarView", () => {
 
       describe("when addNewTabsAtEnd is set to true in package settings", () =>
         it("moves the dragged tab to the desired index in the new pane", () => {
-          atom.config.set("tabs.addNewTabsAtEnd", true);
+          lumine.config.set("tabs.addNewTabsAtEnd", true);
           expect(tabBar.getTabs().map((tab) => tab.element.textContent)).toEqual([
             "Item 1",
             "sample.js",
@@ -1272,12 +1272,12 @@ describe("TabBarView", () => {
           expect(pane.getItems()).toEqual([item1, item2b, editor1, item2]);
           expect(pane.getActiveItem()).toBe(item2b);
 
-          atom.config.set("tabs.addNewTabsAtEnd", false);
+          lumine.config.set("tabs.addNewTabsAtEnd", false);
         }));
 
       describe("when alwaysShowTabBar is set to true in package settings", () =>
         it("always shows the tab bar in the new pane", () => {
-          atom.config.set("tabs.alwaysShowTabBar", true);
+          lumine.config.set("tabs.alwaysShowTabBar", true);
           expect(pane2.getItems().length).toBe(1);
           expect(tabBar2.element).not.toHaveClass("hidden");
 
@@ -1294,7 +1294,7 @@ describe("TabBarView", () => {
 
       describe("when alwaysShowTabBar is set to false in package settings", () => {
         beforeEach(() => {
-          atom.config.set("tabs.alwaysShowTabBar", false);
+          lumine.config.set("tabs.alwaysShowTabBar", false);
           expect(pane2.getItems().length).toBe(1);
           expect(tabBar2.element).toHaveClass("hidden");
         });
@@ -1329,8 +1329,8 @@ describe("TabBarView", () => {
           const [dragEnterEvent, dragLeaveEvent] = Array.from(
             buildDragEnterLeaveEvents(pane2.getElement(), pane.getElement()),
           );
-          dragEnterEvent.dataTransfer.clearData("atom-tab-event");
-          dragLeaveEvent.dataTransfer.clearData("atom-tab-event");
+          dragEnterEvent.dataTransfer.clearData("lumine-tab-event");
+          dragLeaveEvent.dataTransfer.clearData("lumine-tab-event");
 
           tabBar2.onPaneDragEnter(dragEnterEvent);
           expect(tabBar2.element).toHaveClass("hidden");
@@ -1343,7 +1343,7 @@ describe("TabBarView", () => {
 
     describe("when a tab is dragged over a pane item", () => {
       beforeEach(() => {
-        jasmine.attachToDOM(atom.workspace.getElement());
+        jasmine.attachToDOM(lumine.workspace.getElement());
         return layout.activate();
       });
 
@@ -1392,12 +1392,12 @@ describe("TabBarView", () => {
 
         tab.ondrag({ target: tab, clientX: 80, clientY: 50 });
         tab.ondragend({ target: tab, clientX: 80, clientY: 50 });
-        expect(atom.workspace.getCenter().getPanes().length).toEqual(2);
+        expect(lumine.workspace.getCenter().getPanes().length).toEqual(2);
         expect(tabBar.getTabs().map((tab) => tab.element.textContent)).toEqual([
           "Item 1",
           "sample.js",
         ]);
-        expect(atom.workspace.getActivePane().getItems().length).toEqual(1);
+        expect(lumine.workspace.getActivePane().getItems().length).toEqual(1);
       });
 
       describe("when the dragged tab is the only one in the pane", () =>
@@ -1414,7 +1414,7 @@ describe("TabBarView", () => {
 
           tab.ondrag({ target: tab, clientX: 80, clientY: 50 });
           tab.ondragend({ target: tab, clientX: 80, clientY: 50 });
-          expect(atom.workspace.getCenter().getPanes().length).toEqual(1);
+          expect(lumine.workspace.getCenter().getPanes().length).toEqual(1);
           expect(tabBar.getTabs().map((tab) => tab.element.textContent)).toEqual(["sample.js"]);
         }));
 
@@ -1436,12 +1436,12 @@ describe("TabBarView", () => {
 
           tab.ondrag({ target: tab, clientX: 80, clientY: 50 });
           tab.ondragend({ target: tab, clientX: 80, clientY: 50 });
-          expect(atom.workspace.getCenter().getPanes().length).toEqual(2);
+          expect(lumine.workspace.getCenter().getPanes().length).toEqual(2);
           expect(tabBar.getTabs().map((tab) => tab.element.textContent)).toEqual([
             "Item 1",
             "sample.js",
           ]);
-          expect(atom.workspace.getActivePane().getItems().length).toEqual(1);
+          expect(lumine.workspace.getActivePane().getItems().length).toEqual(1);
         }));
 
       describe("when the tab is not allowed in that pane", () =>
@@ -1535,7 +1535,7 @@ describe("TabBarView", () => {
         waitsFor(() => tabBar.moveItemBetweenPanes.callCount > 0);
 
         runs(() => {
-          const editor = atom.workspace.getActiveTextEditor();
+          const editor = lumine.workspace.getActiveTextEditor();
           expect(editor.getPath()).toBe(editor1.getPath());
           expect(pane.getItems()).toEqual([item1, editor, item2]);
         });
@@ -1566,7 +1566,9 @@ describe("TabBarView", () => {
         waitsFor(() => tabBar.moveItemBetweenPanes.callCount > 0);
 
         runs(() =>
-          expect(atom.workspace.getActiveTextEditor().getText()).toBe("I came from another window"),
+          expect(lumine.workspace.getActiveTextEditor().getText()).toBe(
+            "I came from another window",
+          ),
         );
       });
 
@@ -1597,27 +1599,27 @@ describe("TabBarView", () => {
         waitsFor(() => tabBar.moveItemBetweenPanes.callCount > 0);
 
         runs(() => {
-          expect(atom.workspace.getActiveTextEditor().getText()).toBe("I have no path");
-          expect(atom.workspace.getActiveTextEditor().getPath()).toBeUndefined();
+          expect(lumine.workspace.getActiveTextEditor().getText()).toBe("I have no path");
+          expect(lumine.workspace.getActiveTextEditor().getPath()).toBeUndefined();
         });
       });
     });
 
-    if (atom.workspace.getLeftDock != null) {
+    if (lumine.workspace.getLeftDock != null) {
       describe("when a tab is dragged to another pane container", () => {
         let [pane2, tabBar2, dockItem] = Array.from([]);
 
         beforeEach(() => {
-          jasmine.attachToDOM(atom.workspace.getElement());
-          pane = atom.workspace.getActivePane();
-          pane2 = atom.workspace.getLeftDock().getActivePane();
+          jasmine.attachToDOM(lumine.workspace.getElement());
+          pane = lumine.workspace.getActivePane();
+          pane2 = lumine.workspace.getLeftDock().getActivePane();
           dockItem = new TestView("Dock Item");
           pane2.addItem(dockItem);
           tabBar2 = new TabBarView(pane2, "left");
         });
 
         it("removes the tab and item from their original pane and moves them to the target pane", () => {
-          expect(atom.workspace.getLeftDock().isVisible()).toBe(false);
+          expect(lumine.workspace.getLeftDock().isVisible()).toBe(false);
 
           expect(tabBar.getTabs().map((tab) => tab.element.textContent)).toEqual([
             "Item 1",
@@ -1654,7 +1656,7 @@ describe("TabBarView", () => {
           ]);
           expect(pane2.getItems()).toEqual([dockItem, item1]);
           expect(pane2.activeItem).toBe(item1);
-          expect(atom.workspace.getLeftDock().isVisible()).toBe(true);
+          expect(lumine.workspace.getLeftDock().isVisible()).toBe(true);
         });
 
         it("shows a placeholder and allows the tab be dropped only if the item supports the target pane container location", () => {
@@ -1691,7 +1693,7 @@ describe("TabBarView", () => {
   describe("when the tab bar is double clicked", () =>
     it("opens a new empty editor", () => {
       const newFileHandler = jasmine.createSpy("newFileHandler");
-      atom.commands.add(tabBar.element, "application:new-file", newFileHandler);
+      lumine.commands.add(tabBar.element, "application:new-file", newFileHandler);
 
       triggerMouseEvent("dblclick", tabBar.getTabs()[0].element);
       expect(newFileHandler.callCount).toBe(0);
@@ -1713,8 +1715,8 @@ describe("TabBarView", () => {
   describe("when the mouse wheel is used on the tab bar", () => {
     describe("when tabScrolling is true in package settings", () => {
       beforeEach(() => {
-        atom.config.set("tabs.tabScrolling", true);
-        return atom.config.set("tabs.tabScrollingThreshold", 120);
+        lumine.config.set("tabs.tabScrolling", true);
+        return lumine.config.set("tabs.tabScrollingThreshold", 120);
       });
 
       describe("when the mouse wheel scrolls up", () => {
@@ -1758,7 +1760,7 @@ describe("TabBarView", () => {
 
       describe("when the tabScrolling is changed to false", () =>
         it("does not change the active tab when scrolling", () => {
-          atom.config.set("tabs.tabScrolling", false);
+          lumine.config.set("tabs.tabScrolling", false);
 
           expect(pane.getActiveItem()).toBe(item2);
           tabBar.element.dispatchEvent(buildWheelEvent(120));
@@ -1767,7 +1769,7 @@ describe("TabBarView", () => {
     });
 
     describe("when tabScrolling is false in package settings", () => {
-      beforeEach(() => atom.config.set("tabs.tabScrolling", false));
+      beforeEach(() => lumine.config.set("tabs.tabScrolling", false));
 
       describe("when the mouse wheel scrolls up one unit", () =>
         it("does not change the active tab", () => {
@@ -1786,7 +1788,7 @@ describe("TabBarView", () => {
   });
 
   describe("when alwaysShowTabBar is true in package settings", () => {
-    beforeEach(() => atom.config.set("tabs.alwaysShowTabBar", true));
+    beforeEach(() => lumine.config.set("tabs.alwaysShowTabBar", true));
 
     describe("when more than one tab is open", () =>
       it("shows the tab bar", () => {
@@ -1810,7 +1812,7 @@ describe("TabBarView", () => {
   });
 
   describe("when alwaysShowTabBar is false in package settings", () => {
-    beforeEach(() => atom.config.set("tabs.alwaysShowTabBar", false));
+    beforeEach(() => lumine.config.set("tabs.alwaysShowTabBar", false));
 
     describe("when more than one tab is open", () =>
       it("shows the tab bar", () => {
@@ -1854,14 +1856,14 @@ describe("TabBarView", () => {
   });
 
   if (
-    atom.workspace.buildTextEditor().isPending != null ||
-    atom.workspace.getActivePane().getActiveItem != null
+    lumine.workspace.buildTextEditor().isPending != null ||
+    lumine.workspace.getActivePane().getActiveItem != null
   ) {
     const isPending = function (item) {
       if (item.isPending != null) {
         return item.isPending();
       } else {
-        return atom.workspace.getActivePane().getPendingItem() === item;
+        return lumine.workspace.getActivePane().getPendingItem() === item;
       }
     };
 
@@ -1872,7 +1874,7 @@ describe("TabBarView", () => {
         it("adds tab with class 'temp'", () => {
           editor1 = null;
           waitsForPromise(() =>
-            atom.workspace.open("sample.txt", { pending: true }).then((o) => (editor1 = o)),
+            lumine.workspace.open("sample.txt", { pending: true }).then((o) => (editor1 = o)),
           );
 
           runs(() => {
@@ -1888,14 +1890,14 @@ describe("TabBarView", () => {
         it("terminates pending state on the tab's item", () => {
           editor1 = null;
           waitsForPromise(() =>
-            atom.workspace.open("sample.txt", { pending: true }).then((o) => (editor1 = o)),
+            lumine.workspace.open("sample.txt", { pending: true }).then((o) => (editor1 = o)),
           );
 
           runs(() => {
             pane.activateItem(editor1);
             expect(isPending(editor1)).toBe(true);
-            atom.commands.dispatch(
-              atom.workspace.getActivePane().getElement(),
+            lumine.commands.dispatch(
+              lumine.workspace.getActivePane().getElement(),
               "tabs:keep-pending-tab",
             );
             expect(isPending(editor1)).toBe(false);
@@ -1908,9 +1910,9 @@ describe("TabBarView", () => {
           let editor2 = null;
 
           waitsForPromise(() =>
-            atom.workspace.open("sample.txt", { pending: true }).then(function (o) {
+            lumine.workspace.open("sample.txt", { pending: true }).then(function (o) {
               editor1 = o;
-              return atom.workspace
+              return lumine.workspace
                 .open("sample2.txt", { pending: true })
                 .then((o) => (editor2 = o));
             }),
@@ -1927,7 +1929,7 @@ describe("TabBarView", () => {
           let editor2 = null;
 
           waitsForPromise(() =>
-            atom.workspace.open("sample.txt", { pending: true }).then((o) => (editor2 = o)),
+            lumine.workspace.open("sample.txt", { pending: true }).then((o) => (editor2 = o)),
           );
 
           runs(() => {
@@ -1945,7 +1947,7 @@ describe("TabBarView", () => {
         it("makes the item and tab permanent", () => {
           editor1 = null;
           waitsForPromise(() =>
-            atom.workspace.open("sample.txt", { pending: true }).then(function (o) {
+            lumine.workspace.open("sample.txt", { pending: true }).then(function (o) {
               editor1 = o;
               pane.activateItem(editor1);
               editor1.insertText("x");
@@ -1964,7 +1966,7 @@ describe("TabBarView", () => {
         it("makes the tab permanent", () => {
           editor1 = null;
           waitsForPromise(() =>
-            atom.workspace
+            lumine.workspace
               .open(path.join(temp.mkdirSync("tabs-"), "sample.txt"), { pending: true })
               .then(function (o) {
                 editor1 = o;
@@ -1984,7 +1986,7 @@ describe("TabBarView", () => {
         editor1 = null;
         beforeEach(() =>
           waitsForPromise(() =>
-            atom.workspace.open("sample.txt", { pending: true }).then((o) => (editor1 = o)),
+            lumine.workspace.open("sample.txt", { pending: true }).then((o) => (editor1 = o)),
           ),
         );
 
@@ -2009,7 +2011,7 @@ describe("TabBarView", () => {
         it("makes the tab permanent in the other pane", () => {
           editor1 = null;
           waitsForPromise(() =>
-            atom.workspace.open("sample.txt", { pending: true }).then((o) => (editor1 = o)),
+            lumine.workspace.open("sample.txt", { pending: true }).then((o) => (editor1 = o)),
           );
 
           runs(() => {
@@ -2072,7 +2074,7 @@ describe("TabBarView", () => {
       };
 
       // Mock the repository registry to pretend we are working within a repository.
-      spyOn(atom.repositories, "resolveForPath").andCallFake((filePath) =>
+      spyOn(lumine.repositories, "resolveForPath").andCallFake((filePath) =>
         Promise.resolve(filePath === tab1.path ? null : repository),
       );
 
@@ -2193,12 +2195,12 @@ describe("TabBarView", () => {
       });
     });
 
-    if (atom.workspace.getLeftDock != null) {
+    if (lumine.workspace.getLeftDock != null) {
       describe("a pane in the dock", () => {
         beforeEach(() => main.activate());
         afterEach(() => main.deactivate());
         it("gets decorated with tabs", () => {
-          const dock = atom.workspace.getLeftDock();
+          const dock = lumine.workspace.getLeftDock();
           const dockElement = dock.getElement();
           const item = new TestView("Dock Item 1");
           expect(dockElement.querySelectorAll(".tab").length).toBe(0);

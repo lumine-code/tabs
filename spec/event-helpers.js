@@ -138,7 +138,7 @@ module.exports.buildDragEnterLeaveEvents = (enterRelatedTarget, leaveRelatedTarg
       return dataTransfer;
     },
   });
-  dragEnterEvent.dataTransfer.setData("atom-tab-event", "true");
+  dragEnterEvent.dataTransfer.setData("lumine-tab-event", "true");
 
   const dragLeaveEvent = buildMouseEvent("dragleave", null, { relatedTarget: leaveRelatedTarget });
   Object.defineProperty(dragLeaveEvent, "dataTransfer", {
@@ -146,7 +146,7 @@ module.exports.buildDragEnterLeaveEvents = (enterRelatedTarget, leaveRelatedTarg
       return dataTransfer;
     },
   });
-  dragLeaveEvent.dataTransfer.setData("atom-tab-event", "true");
+  dragLeaveEvent.dataTransfer.setData("lumine-tab-event", "true");
 
   return [dragEnterEvent, dragLeaveEvent];
 };
