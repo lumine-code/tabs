@@ -59,6 +59,7 @@ describe("Tabs package main", () => {
 });
 
 describe("TabBarView", () => {
+  let editor2;
   let [deserializerDisposable, item1, item2, editor1, pane, tabBar] = Array.from([]);
 
   class TestView {
@@ -325,9 +326,7 @@ describe("TabBarView", () => {
 
   describe("when a new item is added to the pane", () => {
     it("adds the 'modified' class to the new tab if the item is initially modified", async () => {
-
-      const o = await lumine.workspace.createItemForURI("sample.txt");
-      editor2 = o;
+      const editor2 = await lumine.workspace.createItemForURI("sample.txt");
 
       editor2.insertText("x");
       pane.activateItem(editor2);
@@ -657,7 +656,7 @@ describe("TabBarView", () => {
           () => tabBar.tabForItem(item1).updateIconVisibility.calls.count() > 0,
         );
 
-        tabBar.tabForItem(item1).updateIconVisibility.reset();
+        tabBar.tabForItem(item1).updateIconVisibility.calls.reset();
       });
 
       it("doesn't hide the icon", () =>
@@ -688,7 +687,7 @@ describe("TabBarView", () => {
           () => tabBar.tabForItem(item1).updateIconVisibility.calls.count() > 0,
         );
 
-        tabBar.tabForItem(item1).updateIconVisibility.reset();
+        tabBar.tabForItem(item1).updateIconVisibility.calls.reset();
       });
 
       it("hides the icon", () =>
@@ -1893,7 +1892,6 @@ describe("TabBarView", () => {
         });
 
         it("makes the tab permanent when double-clicking the tab", async () => {
-
           const o = await lumine.workspace.open("sample.txt", { pending: true });
           editor2 = o;
 
@@ -2102,7 +2100,7 @@ describe("TabBarView", () => {
 
     describe("when changes in item statuses are notified", () => {
       it("updates status for items in the repository", () => {
-        tab.updateVcsStatus.reset();
+        tab.updateVcsStatus.calls.reset();
         repository.emitDidChangeStatuses();
         expect(tab.updateVcsStatus.calls.count()).toEqual(1);
       });
@@ -2124,7 +2122,7 @@ describe("TabBarView", () => {
       });
 
       it("does not update status for items not in the repository", () => {
-        tab1.updateVcsStatus.reset();
+        tab1.updateVcsStatus.calls.reset();
         repository.emitDidChangeStatuses();
         expect(tab1.updateVcsStatus.calls.count()).toEqual(0);
       });
@@ -2132,13 +2130,13 @@ describe("TabBarView", () => {
 
     describe("when an item is saved", () => {
       it("does not update VCS subscription if the item's path remains the same", () => {
-        tab.setupVcsStatus.reset();
+        tab.setupVcsStatus.calls.reset();
         tab.item.buffer.emitter.emit("did-save", { path: tab.path });
         expect(tab.setupVcsStatus.calls.count()).toBe(0);
       });
 
       it("updates VCS subscription if the item's path has changed", () => {
-        tab.setupVcsStatus.reset();
+        tab.setupVcsStatus.calls.reset();
         tab.item.buffer.emitter.emit("did-save", { path: "/some/other/path" });
         expect(tab.setupVcsStatus.calls.count()).toBe(1);
       });
