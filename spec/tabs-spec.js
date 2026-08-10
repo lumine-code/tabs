@@ -16,12 +16,12 @@ let {
 describe("Tabs package main", () => {
   let centerElement = null;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     centerElement = lumine.workspace.getCenter().paneContainer.getElement();
 
-    waitsForPromise(() => lumine.workspace.open("sample.js"));
+    await lumine.workspace.open("sample.js");
 
-    waitsForPromise(() => lumine.packages.activatePackage("tabs"));
+    await lumine.packages.activatePackage("tabs");
   });
 
   describe(".activate()", () =>
@@ -40,23 +40,21 @@ describe("Tabs package main", () => {
     }));
 
   describe(".deactivate()", () =>
-    it("removes all tab bar views and stops adding them to new panes", () => {
+    it("removes all tab bar views and stops adding them to new panes", async () => {
       const pane = lumine.workspace.getActivePane();
       pane.splitRight();
       jasmine.attachToDOM(centerElement);
       expect(centerElement.querySelectorAll(".pane").length).toBe(2);
       expect(centerElement.querySelectorAll(".pane > .tab-bar").length).toBe(2);
 
-      waitsForPromise(() => Promise.resolve(lumine.packages.deactivatePackage("tabs"))); // Wrapped so works with Promise & non-Promise deactivate
+      await Promise.resolve(lumine.packages.deactivatePackage("tabs")); // Wrapped so works with Promise & non-Promise deactivate
 
-      runs(() => {
-        expect(centerElement.querySelectorAll(".pane").length).toBe(2);
-        expect(centerElement.querySelectorAll(".pane > .tab-bar").length).toBe(0);
+      expect(centerElement.querySelectorAll(".pane").length).toBe(2);
+      expect(centerElement.querySelectorAll(".pane > .tab-bar").length).toBe(0);
 
-        pane.splitRight();
-        expect(centerElement.querySelectorAll(".pane").length).toBe(3);
-        expect(centerElement.querySelectorAll(".pane > .tab-bar").length).toBe(0);
-      });
+      pane.splitRight();
+      expect(centerElement.querySelectorAll(".pane").length).toBe(3);
+      expect(centerElement.querySelectorAll(".pane > .tab-bar").length).toBe(0);
     }));
 });
 
@@ -146,21 +144,19 @@ describe("TabBarView", () => {
     }
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
     deserializerDisposable = lumine.deserializers.add(TestView);
     item1 = new TestView("Item 1", undefined, "squirrel", "sample.js");
     item2 = new TestView("Item 2");
 
-    waitsForPromise(() => lumine.workspace.open("sample.js"));
+    await lumine.workspace.open("sample.js");
 
-    runs(() => {
-      editor1 = lumine.workspace.getActiveTextEditor();
-      pane = lumine.workspace.getActivePane();
-      pane.addItem(item1, { index: 0 });
-      pane.addItem(item2, { index: 2 });
-      pane.activateItem(item2);
-      tabBar = new TabBarView(pane, "center");
-    });
+    editor1 = lumine.workspace.getActiveTextEditor();
+    pane = lumine.workspace.getActivePane();
+    pane.addItem(item1, { index: 0 });
+    pane.addItem(item2, { index: 2 });
+    pane.activateItem(item2);
+    tabBar = new TabBarView(pane, "center");
   });
 
   afterEach(() => deserializerDisposable.dispose());
@@ -168,18 +164,18 @@ describe("TabBarView", () => {
   describe("when tabs reach the end of the bar", () => {
     it("exposes whether the full bar is occupied", () => {
       const lastTab = tabBar.getTabs()[tabBar.getTabs().length - 1].element;
-      spyOn(tabBar.element, "getBoundingClientRect").andReturn({
+      spyOn(tabBar.element, "getBoundingClientRect").and.returnValue({
         width: 300,
         right: 300,
       });
-      const lastTabRect = spyOn(lastTab, "getBoundingClientRect").andReturn({
+      const lastTabRect = spyOn(lastTab, "getBoundingClientRect").and.returnValue({
         right: 240,
       });
 
       expect(tabBar.updateBarOccupancy()).toBe(false);
       expect(tabBar.element.classList.contains("is-fully-occupied")).toBe(false);
 
-      lastTabRect.andReturn({ right: 300 });
+      lastTabRect.and.returnValue({ right: 300 });
       expect(tabBar.updateBarOccupancy()).toBe(true);
       expect(tabBar.element.classList.contains("is-fully-occupied")).toBe(true);
     });
@@ -294,7 +290,7 @@ describe("TabBarView", () => {
       }
 
       const warnings = [];
-      spyOn(console, "warn").andCallFake((message, object) => warnings.push({ message, object }));
+      spyOn(console, "warn").and.callFake((message, object) => warnings.push({ message, object }));
 
       const badItem = new BadView("Item 3");
       pane.addItem(badItem);
@@ -328,24 +324,14 @@ describe("TabBarView", () => {
     }));
 
   describe("when a new item is added to the pane", () => {
-    it("adds the 'modified' class to the new tab if the item is initially modified", () => {
-      let editor2 = null;
+    it("adds the 'modified' class to the new tab if the item is initially modified", async () => {
 
-      waitsForPromise(() => {
-        if (lumine.workspace.createItemForURI != null) {
-          return lumine.workspace.createItemForURI("sample.txt").then((o) => (editor2 = o));
-        } else {
-          return lumine.workspace
-            .open("sample.txt", { activateItem: false })
-            .then((o) => (editor2 = o));
-        }
-      });
+      const o = await lumine.workspace.createItemForURI("sample.txt");
+      editor2 = o;
 
-      runs(() => {
-        editor2.insertText("x");
-        pane.activateItem(editor2);
-        expect(tabBar.tabForItem(editor2).element).toHaveClass("modified");
-      });
+      editor2.insertText("x");
+      pane.activateItem(editor2);
+      expect(tabBar.tabForItem(editor2).element).toHaveClass("modified");
     });
 
     describe("when addNewTabsAtEnd is set to true in package settings", () => {
@@ -413,7 +399,7 @@ describe("TabBarView", () => {
       // allows dragging
       expect(mousedown.preventDefault).not.toHaveBeenCalled();
       expect(click.preventDefault).toHaveBeenCalled();
-      expect(pane.activate.callCount).toBe(2);
+      expect(pane.activate.calls.count()).toBe(2);
     });
 
     it("focuses the pane item when the active tab is clicked", () => {
@@ -662,14 +648,16 @@ describe("TabBarView", () => {
     });
 
     describe("when showIcon is set to true in package settings", () => {
-      beforeEach(() => {
-        spyOn(tabBar.tabForItem(item1), "updateIconVisibility").andCallThrough();
+      beforeEach(async () => {
+        spyOn(tabBar.tabForItem(item1), "updateIconVisibility").and.callThrough();
 
         lumine.config.set("tabs.showIcons", true);
 
-        waitsFor(() => tabBar.tabForItem(item1).updateIconVisibility.callCount > 0);
+        await conditionPromise(
+          () => tabBar.tabForItem(item1).updateIconVisibility.calls.count() > 0,
+        );
 
-        runs(() => tabBar.tabForItem(item1).updateIconVisibility.reset());
+        tabBar.tabForItem(item1).updateIconVisibility.reset();
       });
 
       it("doesn't hide the icon", () =>
@@ -677,28 +665,30 @@ describe("TabBarView", () => {
           "hide-icon",
         ));
 
-      it("hides the icon from the tab when showIcon is changed to false", () => {
+      it("hides the icon from the tab when showIcon is changed to false", async () => {
         lumine.config.set("tabs.showIcons", false);
 
-        waitsFor(() => tabBar.tabForItem(item1).updateIconVisibility.callCount > 0);
+        await conditionPromise(
+          () => tabBar.tabForItem(item1).updateIconVisibility.calls.count() > 0,
+        );
 
-        runs(() =>
-          expect(tabBar.element.querySelectorAll(".tab")[0].querySelector(".title")).toHaveClass(
-            "hide-icon",
-          ),
+        expect(tabBar.element.querySelectorAll(".tab")[0].querySelector(".title")).toHaveClass(
+          "hide-icon",
         );
       });
     });
 
     describe("when showIcon is set to false in package settings", () => {
-      beforeEach(() => {
-        spyOn(tabBar.tabForItem(item1), "updateIconVisibility").andCallThrough();
+      beforeEach(async () => {
+        spyOn(tabBar.tabForItem(item1), "updateIconVisibility").and.callThrough();
 
         lumine.config.set("tabs.showIcons", false);
 
-        waitsFor(() => tabBar.tabForItem(item1).updateIconVisibility.callCount > 0);
+        await conditionPromise(
+          () => tabBar.tabForItem(item1).updateIconVisibility.calls.count() > 0,
+        );
 
-        runs(() => tabBar.tabForItem(item1).updateIconVisibility.reset());
+        tabBar.tabForItem(item1).updateIconVisibility.reset();
       });
 
       it("hides the icon", () =>
@@ -706,10 +696,12 @@ describe("TabBarView", () => {
           "hide-icon",
         ));
 
-      it("shows the icon on the tab when showIcon is changed to true", () => {
+      it("shows the icon on the tab when showIcon is changed to true", async () => {
         lumine.config.set("tabs.showIcons", true);
 
-        waitsFor(() => tabBar.tabForItem(item1).updateIconVisibility.callCount > 0);
+        await conditionPromise(
+          () => tabBar.tabForItem(item1).updateIconVisibility.calls.count() > 0,
+        );
 
         expect(tabBar.element.querySelectorAll(".tab")[0].querySelector(".title")).not.toHaveClass(
           "hide-icon",
@@ -1030,15 +1022,14 @@ describe("TabBarView", () => {
       }));
 
     describe("when pane:close is fired", () =>
-      it("destroys all the tabs within the pane", () => {
+      it("destroys all the tabs within the pane", async () => {
         const pane2 = pane.splitDown({ copyActiveItem: true });
         const tabBar2 = new TabBarView(pane2, "center");
         const tab2 = tabBar2.tabAtIndex(0);
         spyOn(tab2, "destroy");
 
-        waitsForPromise(() =>
-          Promise.resolve(pane2.close()).then(() => expect(tab2.destroy).toHaveBeenCalled()),
-        );
+        await Promise.resolve(pane2.close());
+        expect(tab2.destroy).toHaveBeenCalled();
       }));
   });
 
@@ -1300,7 +1291,7 @@ describe("TabBarView", () => {
         });
 
         it("toggles the tab bar in the new pane", () => {
-          spyOn(tabBar2, "itemIsAllowed").andReturn(true);
+          spyOn(tabBar2, "itemIsAllowed").and.returnValue(true);
           const [dragEnterEvent, dragLeaveEvent] = Array.from(
             buildDragEnterLeaveEvents(pane2.getElement(), pane.getElement()),
           );
@@ -1313,7 +1304,7 @@ describe("TabBarView", () => {
         });
 
         it("does not toggle the tab bar if the item cannot be moved to that pane", () => {
-          spyOn(tabBar2, "itemIsAllowed").andReturn(false);
+          spyOn(tabBar2, "itemIsAllowed").and.returnValue(false);
           const [dragEnterEvent, dragLeaveEvent] = Array.from(
             buildDragEnterLeaveEvents(pane2.getElement(), pane.getElement()),
           );
@@ -1452,7 +1443,7 @@ describe("TabBarView", () => {
             rect: { top: 0, left: 0, width: 100, height: 100 },
           };
 
-          spyOn(layout, "itemIsAllowedInPane").andReturn(false);
+          spyOn(layout, "itemIsAllowedInPane").and.returnValue(false);
           spyOn(pane, "split");
 
           const tab = tabBar.tabAtIndex(0).element;
@@ -1506,9 +1497,9 @@ describe("TabBarView", () => {
       }));
 
     describe("when a tab is dragged to another editor window", () => {
-      beforeEach(() => spyOn(pane, "destroyItem").andCallThrough());
+      beforeEach(() => spyOn(pane, "destroyItem").and.callThrough());
 
-      it("closes the tab in the first window and opens the tab in the second window", () => {
+      it("closes the tab in the first window and opens the tab in the second window", async () => {
         const [dragStartEvent, dropEvent] = Array.from(
           buildDragEvents(tabBar.tabAtIndex(1).element, tabBar.tabAtIndex(0).element),
         );
@@ -1520,28 +1511,27 @@ describe("TabBarView", () => {
         });
 
         // Can't spy on onDropOnOtherWindow since it's binded
-        waitsFor("dragged pane item to be destroyed", () => pane.destroyItem.callCount === 1);
+        await conditionPromise(
+          () => pane.destroyItem.calls.count() === 1,
+          "dragged pane item to be destroyed",
+        );
 
-        runs(() => {
-          expect(pane.getItems()).toEqual([item1, item2]);
-          expect(pane.getActiveItem()).toBe(item2);
+        expect(pane.getItems()).toEqual([item1, item2]);
+        expect(pane.getActiveItem()).toBe(item2);
 
-          dropEvent.dataTransfer.setData("from-window-id", tabBar.getWindowId() + 1);
+        dropEvent.dataTransfer.setData("from-window-id", tabBar.getWindowId() + 1);
 
-          spyOn(tabBar, "moveItemBetweenPanes").andCallThrough();
-          return tabBar.onDrop(dropEvent);
-        });
+        spyOn(tabBar, "moveItemBetweenPanes").and.callThrough();
+        tabBar.onDrop(dropEvent);
 
-        waitsFor(() => tabBar.moveItemBetweenPanes.callCount > 0);
+        await conditionPromise(() => tabBar.moveItemBetweenPanes.calls.count() > 0);
 
-        runs(() => {
-          const editor = lumine.workspace.getActiveTextEditor();
-          expect(editor.getPath()).toBe(editor1.getPath());
-          expect(pane.getItems()).toEqual([item1, editor, item2]);
-        });
+        const editor = lumine.workspace.getActiveTextEditor();
+        expect(editor.getPath()).toBe(editor1.getPath());
+        expect(pane.getItems()).toEqual([item1, editor, item2]);
       });
 
-      it("transfers the text of the editor when it is modified", () => {
+      it("transfers the text of the editor when it is modified", async () => {
         editor1.setText("I came from another window");
         const [dragStartEvent, dropEvent] = Array.from(
           buildDragEvents(tabBar.tabAtIndex(1).element, tabBar.tabAtIndex(0).element),
@@ -1554,25 +1544,22 @@ describe("TabBarView", () => {
         });
 
         // Can't spy on onDropOnOtherWindow since it's binded
-        waitsFor("dragged pane item to be destroyed", () => pane.destroyItem.callCount === 1);
-
-        runs(() => {
-          dropEvent.dataTransfer.setData("from-window-id", tabBar.getWindowId() + 1);
-
-          spyOn(tabBar, "moveItemBetweenPanes").andCallThrough();
-          return tabBar.onDrop(dropEvent);
-        });
-
-        waitsFor(() => tabBar.moveItemBetweenPanes.callCount > 0);
-
-        runs(() =>
-          expect(lumine.workspace.getActiveTextEditor().getText()).toBe(
-            "I came from another window",
-          ),
+        await conditionPromise(
+          () => pane.destroyItem.calls.count() === 1,
+          "dragged pane item to be destroyed",
         );
+
+        dropEvent.dataTransfer.setData("from-window-id", tabBar.getWindowId() + 1);
+
+        spyOn(tabBar, "moveItemBetweenPanes").and.callThrough();
+        tabBar.onDrop(dropEvent);
+
+        await conditionPromise(() => tabBar.moveItemBetweenPanes.calls.count() > 0);
+
+        expect(lumine.workspace.getActiveTextEditor().getText()).toBe("I came from another window");
       });
 
-      it("allows untitled editors to be moved between windows", () => {
+      it("allows untitled editors to be moved between windows", async () => {
         editor1.getBuffer().setPath(null);
         editor1.setText("I have no path");
 
@@ -1587,21 +1574,20 @@ describe("TabBarView", () => {
         });
 
         // Can't spy on onDropOnOtherWindow since it's binded
-        waitsFor("dragged pane item to be destroyed", () => pane.destroyItem.callCount === 1);
+        await conditionPromise(
+          () => pane.destroyItem.calls.count() === 1,
+          "dragged pane item to be destroyed",
+        );
 
-        runs(() => {
-          dropEvent.dataTransfer.setData("from-window-id", tabBar.getWindowId() + 1);
+        dropEvent.dataTransfer.setData("from-window-id", tabBar.getWindowId() + 1);
 
-          spyOn(tabBar, "moveItemBetweenPanes").andCallThrough();
-          return tabBar.onDrop(dropEvent);
-        });
+        spyOn(tabBar, "moveItemBetweenPanes").and.callThrough();
+        tabBar.onDrop(dropEvent);
 
-        waitsFor(() => tabBar.moveItemBetweenPanes.callCount > 0);
+        await conditionPromise(() => tabBar.moveItemBetweenPanes.calls.count() > 0);
 
-        runs(() => {
-          expect(lumine.workspace.getActiveTextEditor().getText()).toBe("I have no path");
-          expect(lumine.workspace.getActiveTextEditor().getPath()).toBeUndefined();
-        });
+        expect(lumine.workspace.getActiveTextEditor().getText()).toBe("I have no path");
+        expect(lumine.workspace.getActiveTextEditor().getPath()).toBeUndefined();
       });
     });
 
@@ -1696,10 +1682,10 @@ describe("TabBarView", () => {
       lumine.commands.add(tabBar.element, "application:new-file", newFileHandler);
 
       triggerMouseEvent("dblclick", tabBar.getTabs()[0].element);
-      expect(newFileHandler.callCount).toBe(0);
+      expect(newFileHandler.calls.count()).toBe(0);
 
       triggerMouseEvent("dblclick", tabBar.element);
-      expect(newFileHandler.callCount).toBe(1);
+      expect(newFileHandler.calls.count()).toBe(1);
     }));
 
   describe("when the tab bar is right-clicked", () => {
@@ -1797,17 +1783,15 @@ describe("TabBarView", () => {
       }));
 
     describe("when only one tab is open", () =>
-      it("shows the tab bar", () => {
+      it("shows the tab bar", async () => {
         expect(pane.getItems().length).toBe(3);
 
-        waitsForPromise(() => pane.destroyItem(item1));
+        await pane.destroyItem(item1);
 
-        waitsForPromise(() => pane.destroyItem(item2));
+        await pane.destroyItem(item2);
 
-        runs(() => {
-          expect(pane.getItems().length).toBe(1);
-          expect(tabBar.element).not.toHaveClass("hidden");
-        });
+        expect(pane.getItems().length).toBe(1);
+        expect(tabBar.element).not.toHaveClass("hidden");
       }));
   });
 
@@ -1821,21 +1805,19 @@ describe("TabBarView", () => {
       }));
 
     describe("when only one tab is open", () =>
-      it("hides the tab bar", () => {
+      it("hides the tab bar", async () => {
         expect(pane.getItems().length).toBe(3);
 
-        waitsForPromise(() => pane.destroyItem(item1));
+        await pane.destroyItem(item1);
 
-        waitsForPromise(() => pane.destroyItem(item2));
+        await pane.destroyItem(item2);
 
-        runs(() => {
-          expect(pane.getItems().length).toBe(1);
-          expect(tabBar.element).toHaveClass("hidden");
-        });
+        expect(pane.getItems().length).toBe(1);
+        expect(tabBar.element).toHaveClass("hidden");
       }));
 
     describe("when there are multiple panes", () =>
-      it("hides each tab bar separately", () => {
+      it("hides each tab bar separately", async () => {
         const item3 = new TestView("Item 3");
         const item4 = new TestView("Item 4");
         const pane2 = pane.splitRight({ items: [item3, item4] });
@@ -1844,14 +1826,12 @@ describe("TabBarView", () => {
         expect(tabBar.element).not.toHaveClass("hidden");
         expect(tabBar2.element).not.toHaveClass("hidden");
 
-        waitsForPromise(() => pane2.destroyItem(item3));
+        await pane2.destroyItem(item3);
 
-        runs(() => {
-          expect(pane2.getItems().length).toBe(1);
+        expect(pane2.getItems().length).toBe(1);
 
-          expect(tabBar.element).not.toHaveClass("hidden");
-          expect(tabBar2.element).toHaveClass("hidden");
-        });
+        expect(tabBar.element).not.toHaveClass("hidden");
+        expect(tabBar2.element).toHaveClass("hidden");
       }));
   });
 
@@ -1871,124 +1851,96 @@ describe("TabBarView", () => {
       beforeEach(() => pane.destroyItems());
 
       describe("when opening a new tab", () =>
-        it("adds tab with class 'temp'", () => {
+        it("adds tab with class 'temp'", async () => {
           editor1 = null;
-          waitsForPromise(() =>
-            lumine.workspace.open("sample.txt", { pending: true }).then((o) => (editor1 = o)),
-          );
+          const o = await lumine.workspace.open("sample.txt", { pending: true });
+          editor1 = o;
 
-          runs(() => {
-            pane.activateItem(editor1);
-            expect(tabBar.element.querySelectorAll(".tab .temp").length).toBe(1);
-            expect(tabBar.element.querySelectorAll(".tab")[0].querySelector(".title")).toHaveClass(
-              "temp",
-            );
-          });
+          pane.activateItem(editor1);
+          expect(tabBar.element.querySelectorAll(".tab .temp").length).toBe(1);
+          expect(tabBar.element.querySelectorAll(".tab")[0].querySelector(".title")).toHaveClass(
+            "temp",
+          );
         }));
 
       describe("when tabs:keep-pending-tab is triggered on the pane", () =>
-        it("terminates pending state on the tab's item", () => {
+        it("terminates pending state on the tab's item", async () => {
           editor1 = null;
-          waitsForPromise(() =>
-            lumine.workspace.open("sample.txt", { pending: true }).then((o) => (editor1 = o)),
-          );
+          const o = await lumine.workspace.open("sample.txt", { pending: true });
+          editor1 = o;
 
-          runs(() => {
-            pane.activateItem(editor1);
-            expect(isPending(editor1)).toBe(true);
-            lumine.commands.dispatch(
-              lumine.workspace.getActivePane().getElement(),
-              "tabs:keep-pending-tab",
-            );
-            expect(isPending(editor1)).toBe(false);
-          });
+          pane.activateItem(editor1);
+          expect(isPending(editor1)).toBe(true);
+          lumine.commands.dispatch(
+            lumine.workspace.getActivePane().getElement(),
+            "tabs:keep-pending-tab",
+          );
+          expect(isPending(editor1)).toBe(false);
         }));
 
       describe("when there is a temp tab already", () => {
-        it("it will replace an existing temporary tab", () => {
+        it("it will replace an existing temporary tab", async () => {
           editor1 = null;
           let editor2 = null;
 
-          waitsForPromise(() =>
-            lumine.workspace.open("sample.txt", { pending: true }).then(function (o) {
-              editor1 = o;
-              return lumine.workspace
-                .open("sample2.txt", { pending: true })
-                .then((o) => (editor2 = o));
-            }),
-          );
+          const o = await lumine.workspace.open("sample.txt", { pending: true });
+          editor1 = o;
+          await lumine.workspace.open("sample2.txt", { pending: true }).then((o) => (editor2 = o));
 
-          runs(() => {
-            expect(editor1.isDestroyed()).toBe(true);
-            expect(tabBar.tabForItem(editor1)).toBeUndefined();
-            expect(tabBar.tabForItem(editor2).element.querySelector(".title")).toHaveClass("temp");
-          });
+          expect(editor1.isDestroyed()).toBe(true);
+          expect(tabBar.tabForItem(editor1)).toBeUndefined();
+          expect(tabBar.tabForItem(editor2).element.querySelector(".title")).toHaveClass("temp");
         });
 
-        it("makes the tab permanent when double-clicking the tab", () => {
-          let editor2 = null;
+        it("makes the tab permanent when double-clicking the tab", async () => {
 
-          waitsForPromise(() =>
-            lumine.workspace.open("sample.txt", { pending: true }).then((o) => (editor2 = o)),
+          const o = await lumine.workspace.open("sample.txt", { pending: true });
+          editor2 = o;
+
+          pane.activateItem(editor2);
+          expect(tabBar.tabForItem(editor2).element.querySelector(".title")).toHaveClass("temp");
+          triggerMouseEvent("dblclick", tabBar.tabForItem(editor2).element, { button: 0 });
+          expect(tabBar.tabForItem(editor2).element.querySelector(".title")).not.toHaveClass(
+            "temp",
           );
-
-          runs(() => {
-            pane.activateItem(editor2);
-            expect(tabBar.tabForItem(editor2).element.querySelector(".title")).toHaveClass("temp");
-            triggerMouseEvent("dblclick", tabBar.tabForItem(editor2).element, { button: 0 });
-            expect(tabBar.tabForItem(editor2).element.querySelector(".title")).not.toHaveClass(
-              "temp",
-            );
-          });
         });
       });
 
       describe("when editing a file in pending state", () =>
-        it("makes the item and tab permanent", () => {
+        it("makes the item and tab permanent", async () => {
           editor1 = null;
-          waitsForPromise(() =>
-            lumine.workspace.open("sample.txt", { pending: true }).then(function (o) {
-              editor1 = o;
-              pane.activateItem(editor1);
-              editor1.insertText("x");
-              return advanceClock(editor1.buffer.stoppedChangingDelay);
-            }),
-          );
+          const o = await lumine.workspace.open("sample.txt", { pending: true });
+          editor1 = o;
+          pane.activateItem(editor1);
+          editor1.insertText("x");
+          await advanceClock(editor1.buffer.stoppedChangingDelay);
 
-          runs(() =>
-            expect(tabBar.tabForItem(editor1).element.querySelector(".title")).not.toHaveClass(
-              "temp",
-            ),
+          expect(tabBar.tabForItem(editor1).element.querySelector(".title")).not.toHaveClass(
+            "temp",
           );
         }));
 
       describe("when saving a file", () =>
-        it("makes the tab permanent", () => {
+        it("makes the tab permanent", async () => {
           editor1 = null;
-          waitsForPromise(() =>
-            lumine.workspace
-              .open(path.join(temp.mkdirSync("tabs-"), "sample.txt"), { pending: true })
-              .then(function (o) {
-                editor1 = o;
-                pane.activateItem(editor1);
-                return editor1.save();
-              }),
-          );
+          const o = await lumine.workspace.open(path.join(temp.mkdirSync("tabs-"), "sample.txt"), {
+            pending: true,
+          });
+          editor1 = o;
+          pane.activateItem(editor1);
+          await editor1.save();
 
-          runs(() =>
-            expect(tabBar.tabForItem(editor1).element.querySelector(".title")).not.toHaveClass(
-              "temp",
-            ),
+          expect(tabBar.tabForItem(editor1).element.querySelector(".title")).not.toHaveClass(
+            "temp",
           );
         }));
 
       describe("when splitting a pending tab", () => {
         editor1 = null;
-        beforeEach(() =>
-          waitsForPromise(() =>
-            lumine.workspace.open("sample.txt", { pending: true }).then((o) => (editor1 = o)),
-          ),
-        );
+        beforeEach(async () => {
+          const o = await lumine.workspace.open("sample.txt", { pending: true });
+          editor1 = o;
+        });
 
         it("makes the tab permanent in the new pane", () => {
           pane.activateItem(editor1);
@@ -2008,23 +1960,20 @@ describe("TabBarView", () => {
       });
 
       describe("when dragging a pending tab to a different pane", () =>
-        it("makes the tab permanent in the other pane", () => {
+        it("makes the tab permanent in the other pane", async () => {
           editor1 = null;
-          waitsForPromise(() =>
-            lumine.workspace.open("sample.txt", { pending: true }).then((o) => (editor1 = o)),
-          );
+          const o = await lumine.workspace.open("sample.txt", { pending: true });
+          editor1 = o;
 
-          runs(() => {
-            pane.activateItem(editor1);
-            const pane2 = pane.splitRight();
+          pane.activateItem(editor1);
+          const pane2 = pane.splitRight();
 
-            const tabBar2 = new TabBarView(pane2, "center");
-            tabBar2.moveItemBetweenPanes(pane, 0, pane2, 1, editor1);
+          const tabBar2 = new TabBarView(pane2, "center");
+          tabBar2.moveItemBetweenPanes(pane, 0, pane2, 1, editor1);
 
-            expect(
-              tabBar2.tabForItem(pane2.getActiveItem()).element.querySelector(".title"),
-            ).not.toHaveClass("temp");
-          });
+          expect(
+            tabBar2.tabForItem(pane2.getActiveItem()).element.querySelector(".title"),
+          ).not.toHaveClass("temp");
         }));
     });
   }
@@ -2032,14 +1981,14 @@ describe("TabBarView", () => {
   describe("integration with version control systems", () => {
     let [repository, tab, tab1] = Array.from([]);
 
-    beforeEach(() => {
+    beforeEach(async () => {
       tab = tabBar.tabForItem(editor1);
-      spyOn(tab, "setupVcsStatus").andCallThrough();
-      spyOn(tab, "updateVcsStatus").andCallThrough();
+      spyOn(tab, "setupVcsStatus").and.callThrough();
+      spyOn(tab, "updateVcsStatus").and.callThrough();
 
       tab1 = tabBar.tabForItem(item1);
       tab1.path = "/some/path/outside/the/repository";
-      spyOn(tab1, "updateVcsStatus").andCallThrough();
+      spyOn(tab1, "updateVcsStatus").and.callThrough();
 
       // Mock the repository
       repository = jasmine.createSpyObj("repo", ["isPathIgnoredCached", "getPathStatusSummary"]);
@@ -2074,7 +2023,7 @@ describe("TabBarView", () => {
       };
 
       // Mock the repository registry to pretend we are working within a repository.
-      spyOn(lumine.repositories, "resolveForPath").andCallFake((filePath) =>
+      spyOn(lumine.repositories, "resolveForPath").and.callFake((filePath) =>
         Promise.resolve(filePath === tab1.path ? null : repository),
       );
 
@@ -2082,7 +2031,7 @@ describe("TabBarView", () => {
       // against the real one).
       tab.setupVcsStatus();
 
-      return waitsFor(
+      await conditionPromise(
         () =>
           (repository.changeStatusCallbacks != null
             ? repository.changeStatusCallbacks.length
@@ -2092,7 +2041,7 @@ describe("TabBarView", () => {
 
     describe("when working inside a VCS repository", () => {
       it("adds custom style for new items", () => {
-        repository.getPathStatusSummary.andReturn({
+        repository.getPathStatusSummary.and.returnValue({
           source: "cache",
           conflicted: false,
           modified: false,
@@ -2105,7 +2054,7 @@ describe("TabBarView", () => {
       });
 
       it("adds custom style for modified items", () => {
-        repository.getPathStatusSummary.andReturn({
+        repository.getPathStatusSummary.and.returnValue({
           source: "cache",
           conflicted: false,
           modified: true,
@@ -2118,7 +2067,7 @@ describe("TabBarView", () => {
       });
 
       it("adds custom style for conflicted items", () => {
-        repository.getPathStatusSummary.andReturn({
+        repository.getPathStatusSummary.and.returnValue({
           source: "snapshot",
           conflicted: true,
           modified: false,
@@ -2131,7 +2080,7 @@ describe("TabBarView", () => {
       });
 
       it("adds custom style for ignored items", () => {
-        repository.isPathIgnoredCached.andReturn(true);
+        repository.isPathIgnoredCached.and.returnValue(true);
         tab.updateVcsStatus(repository);
         expect(tabBar.element.querySelectorAll(".tab")[1].querySelector(".title")).toHaveClass(
           "status-ignored",
@@ -2162,7 +2111,7 @@ describe("TabBarView", () => {
         expect(tabBar.element.querySelectorAll(".tab")[1].querySelector(".title")).not.toHaveClass(
           "status-modified",
         );
-        repository.getPathStatusSummary.andReturn({
+        repository.getPathStatusSummary.and.returnValue({
           source: "cache",
           conflicted: false,
           modified: true,

@@ -4,17 +4,15 @@ const { Disposable } = require("lumine");
 describe("tab icons", () => {
   let tab;
 
-  beforeEach(() => {
-    waitsForPromise(() => lumine.workspace.open(path.join(__dirname, "fixtures", "sample.js")));
+  beforeEach(async () => {
+    await lumine.workspace.open(path.join(__dirname, "fixtures", "sample.js"));
 
-    waitsForPromise(() => lumine.packages.activatePackage("tabs"));
+    await lumine.packages.activatePackage("tabs");
 
-    runs(() => {
-      // The registry only repaints elements that are in the document, as they
-      // are in a real window.
-      jasmine.attachToDOM(lumine.workspace.getElement());
-      tab = lumine.workspace.getElement().querySelector(".tab");
-    });
+    // The registry only repaints elements that are in the document, as they
+    // are in a real window.
+    jasmine.attachToDOM(lumine.workspace.getElement());
+    tab = lumine.workspace.getElement().querySelector(".tab");
   });
 
   const provide = (iconFor, extra = {}) =>
