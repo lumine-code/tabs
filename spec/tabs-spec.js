@@ -927,12 +927,12 @@ describe("TabBarView", () => {
         beforeEach(() => {
           triggerClickEvent(tabBar.tabForItem(item1).element, { button: 2 });
           expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
-          spyOn(lumine.app, "openWindow");
+          spyOn(lumine.application, "openWindow");
         });
 
         it("opens new window, closes current tab", () => {
           lumine.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
-          expect(lumine.app.openWindow).toHaveBeenCalled();
+          expect(lumine.application.openWindow).toHaveBeenCalled();
 
           expect(pane.getItems().length).toBe(2);
           expect(tabBar.getTabs().length).toBe(2);
@@ -956,9 +956,9 @@ describe("TabBarView", () => {
         // See #309 for background
 
         it("does nothing", () => {
-          spyOn(lumine.app, "openWindow");
+          spyOn(lumine.application, "openWindow");
           lumine.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
-          expect(lumine.app.openWindow).not.toHaveBeenCalled();
+          expect(lumine.application.openWindow).not.toHaveBeenCalled();
         }));
     });
   });
