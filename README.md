@@ -12,7 +12,7 @@ Display a selectable tab for each open item in a pane.
 
 ## Installation
 
-To install `tabs` search for _tabs_ in the Install pane of the Lumine settings or run `lumine --install lumine-code/tabs`.
+To install `tabs` search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/tabs`.
 
 ## Commands
 
