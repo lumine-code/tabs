@@ -56,6 +56,33 @@ describe("Tabs package main", () => {
       expect(centerElement.querySelectorAll(".pane").length).toBe(3);
       expect(centerElement.querySelectorAll(".pane > .tab-bar").length).toBe(0);
     }));
+
+  describe("the tab bar's context menu", () => {
+    let tabBarElement = null;
+
+    const labelsFor = (target) =>
+      lumine.contextMenu.templateForElement(target).map((item) => item.label);
+
+    beforeEach(() => {
+      jasmine.attachToDOM(centerElement);
+      tabBarElement = centerElement.querySelector(".pane > .tab-bar");
+    });
+
+    it("offers the pane-wide items on the bar's empty space", () => {
+      const labels = labelsFor(tabBarElement);
+      expect(labels).toContain("Reopen Closed Tab");
+      expect(labels).toContain("Close Saved Tabs");
+      expect(labels).toContain("Close All Tabs");
+      expect(labels).toContain("Close Pane");
+    });
+
+    it("leaves the pane-wide items out on a tab, which has its own", () => {
+      const labels = labelsFor(tabBarElement.querySelector(".tab"));
+      expect(labels).not.toContain("Close Pane");
+      expect(labels).toContain("Close Tab");
+      expect(labels).toContain("Close All Tabs");
+    });
+  });
 });
 
 describe("TabBarView", () => {
@@ -821,6 +848,15 @@ describe("TabBarView", () => {
         expect(pane.getItems().indexOf(item2)).toBe(-1);
         expect(tabBar.getTabs().length).toBe(2);
         expect(tabBar.element.textContent).not.toMatch("Item 2");
+      }));
+
+    describe("when the bar's empty space was right-clicked last", () =>
+      it("leaves the tabs alone, having no target tab to act on", () => {
+        triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
+        triggerClickEvent(tabBar.element, { button: 2 });
+
+        lumine.commands.dispatch(tabBar.element, "tabs:close-tab");
+        expect(pane.getItems().length).toBe(3);
       }));
 
     describe("when tabs:close-other-tabs is fired", () =>
@@ -1693,6 +1729,15 @@ describe("TabBarView", () => {
       expect(tabBar.tabAtIndex(0).element.classList.contains("right-clicked")).toBe(true);
       triggerClickEvent(tabBar.tabAtIndex(2).element, { button: 2 });
       expect(tabBar.tabAtIndex(2).element.classList.contains("right-clicked")).toBe(true);
+      expect(tabBar.tabAtIndex(0).element.classList.contains("right-clicked")).toBe(false);
+    });
+
+    it("forgets the right-clicked tab when the bar's empty space is right-clicked", () => {
+      triggerClickEvent(tabBar.tabAtIndex(0).element, { button: 2 });
+      expect(tabBar.rightClickedTab).toBe(tabBar.tabAtIndex(0));
+
+      triggerClickEvent(tabBar.element, { button: 2 });
+      expect(tabBar.rightClickedTab).toBeUndefined();
       expect(tabBar.tabAtIndex(0).element.classList.contains("right-clicked")).toBe(false);
     });
   });
