@@ -31,26 +31,30 @@
       {
         "type": "separator"
       },
+      // Core's own pane group, in core's order and under core's labels: the
+      // tab bar is a sibling of `.item-views`, never a descendant, so core's
+      // block cannot reach this menu and nothing here collides with it. A
+      // submenu would only make the user hunt for four rows they already know
+      // from the pane menu.
       {
-        "label": "Split Tab",
-        "submenu": [
-          {
-            "label": "Up",
-            "command": "tabs:split-up"
-          },
-          {
-            "label": "Down",
-            "command": "tabs:split-down"
-          },
-          {
-            "label": "Left",
-            "command": "tabs:split-left"
-          },
-          {
-            "label": "Right",
-            "command": "tabs:split-right"
-          }
-        ]
+        "label": "Split Up",
+        "command": "tabs:split-up"
+      },
+      {
+        "label": "Split Down",
+        "command": "tabs:split-down"
+      },
+      {
+        "label": "Split Left",
+        "command": "tabs:split-left"
+      },
+      {
+        "label": "Split Right",
+        "command": "tabs:split-right"
+      },
+      {
+        "label": "Close Pane",
+        "command": "pane:close"
       },
       {
         "type": "separator"
