@@ -151,7 +151,7 @@
     height: var(--tab-height);
     z-index: 999;
     list-style: none;
-    background: var(--background-color-info);
+    background: var(--accent-color);
     pointer-events: none;
 
     /* bar */
