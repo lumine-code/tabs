@@ -165,23 +165,19 @@ describe("TabBarView", () => {
         callback(),
       );
     }
-    onDidChangeModified() {
-      // to suppress deprecation warning
-      return { dispose() {} };
+    getFileState() {
+      return this.fileState ?? lumine.FileState.UNMODIFIED;
     }
-    isDeleted() {
-      return this._isDeleted === true;
-    }
-    onDidDelete(callback) {
-      if (this.deleteCallbacks == null) {
-        this.deleteCallbacks = [];
+    onDidChangeFileState(callback) {
+      if (this.fileStateCallbacks == null) {
+        this.fileStateCallbacks = [];
       }
-      this.deleteCallbacks.push(callback);
-      return { dispose: () => _.remove(this.deleteCallbacks, callback) };
+      this.fileStateCallbacks.push(callback);
+      return { dispose: () => _.remove(this.fileStateCallbacks, callback) };
     }
-    emitDeleted() {
-      this._isDeleted = true;
-      return Array.from(this.deleteCallbacks != null ? this.deleteCallbacks : []).map((cb) => cb());
+    emitFileStateChanged(fileState) {
+      this.fileState = fileState;
+      return Array.from(this.fileStateCallbacks ?? []).map((callback) => callback(fileState));
     }
   }
 
@@ -222,14 +218,21 @@ describe("TabBarView", () => {
     });
   });
 
-  describe("when an item reports that its file was deleted on disk", () => {
-    it("toggles the 'deleted' class on the item's tab", () => {
+  describe("when an item's file state changes", () => {
+    it("exposes exactly one mutually exclusive state on the item's tab", () => {
       const tab = tabBar.tabAtIndex(0);
       expect(tab.item).toBe(item1);
-      expect(tab.element.classList.contains("deleted")).toBe(false);
+      expect(tab.element.dataset.fileState).toBe(lumine.FileState.UNMODIFIED);
 
-      item1.emitDeleted();
-      expect(tab.element.classList.contains("deleted")).toBe(true);
+      for (const fileState of [
+        lumine.FileState.MODIFIED,
+        lumine.FileState.CONFLICTED,
+        lumine.FileState.REMOVED,
+        lumine.FileState.UNMODIFIED,
+      ]) {
+        item1.emitFileStateChanged(fileState);
+        expect(tab.element.dataset.fileState).toBe(fileState);
+      }
     });
   });
 
@@ -325,7 +328,7 @@ describe("TabBarView", () => {
         }
         onDidChangeTitle() {}
         onDidChangeIcon() {}
-        onDidChangeModified() {}
+        onDidChangeFileState() {}
         onDidSave() {}
         onDidChangePath() {}
       }
@@ -345,7 +348,7 @@ describe("TabBarView", () => {
       expect(warnings[2].message).toContain("onDidChangeIcon");
       expect(warnings[2].object).toBe(badItem);
 
-      expect(warnings[3].message).toContain("onDidChangeModified");
+      expect(warnings[3].message).toContain("onDidChangeFileState");
       expect(warnings[3].object).toBe(badItem);
 
       expect(warnings[4].message).toContain("onDidSave");
@@ -365,12 +368,12 @@ describe("TabBarView", () => {
     }));
 
   describe("when a new item is added to the pane", () => {
-    it("adds the 'modified' class to the new tab if the item is initially modified", async () => {
+    it("sets modified on a new tab whose item is initially modified", async () => {
       const editor2 = await lumine.workspace.createItemForURI("sample.txt");
 
       editor2.insertText("x");
       pane.activateItem(editor2);
-      expect(tabBar.tabForItem(editor2).element).toHaveClass("modified");
+      expect(tabBar.tabForItem(editor2).element.dataset.fileState).toBe(lumine.FileState.MODIFIED);
     });
 
     describe("when addNewTabsAtEnd is set to true in package settings", () => {
@@ -771,21 +774,21 @@ describe("TabBarView", () => {
     });
   });
 
-  describe("when a tab item's modified status changes", () =>
-    it("adds or removes the 'modified' class to the tab based on the status", () => {
+  describe("when a tab item's file state changes", () =>
+    it("updates the tab's data-file-state attribute", () => {
       const tab = tabBar.tabForItem(editor1);
-      expect(editor1.isModified()).toBeFalsy();
-      expect(tab.element).not.toHaveClass("modified");
+      expect(editor1.getFileState()).toBe(lumine.FileState.UNMODIFIED);
+      expect(tab.element.dataset.fileState).toBe(lumine.FileState.UNMODIFIED);
 
       editor1.insertText("x");
       advanceClock(editor1.buffer.stoppedChangingDelay);
-      expect(editor1.isModified()).toBeTruthy();
-      expect(tab.element).toHaveClass("modified");
+      expect(editor1.getFileState()).toBe(lumine.FileState.MODIFIED);
+      expect(tab.element.dataset.fileState).toBe(lumine.FileState.MODIFIED);
 
       editor1.undo();
       advanceClock(editor1.buffer.stoppedChangingDelay);
-      expect(editor1.isModified()).toBeFalsy();
-      expect(tab.element).not.toHaveClass("modified");
+      expect(editor1.getFileState()).toBe(lumine.FileState.UNMODIFIED);
+      expect(tab.element.dataset.fileState).toBe(lumine.FileState.UNMODIFIED);
     }));
 
   describe("when a pane item moves to a new index", () => {
@@ -913,7 +916,7 @@ describe("TabBarView", () => {
 
     describe("when tabs:close-saved-tabs is fired", () =>
       it("closes all the saved tabs", () => {
-        item1.isModified = () => true;
+        item1.fileState = lumine.FileState.CONFLICTED;
         lumine.commands.dispatch(tabBar.element, "tabs:close-saved-tabs");
         expect(pane.getItems().length).toBe(1);
         expect(pane.getItems()[0]).toBe(item1);
@@ -1063,7 +1066,7 @@ describe("TabBarView", () => {
 
     describe("when tabs:close-saved-tabs is fired", () =>
       it("closes all the saved tabs", () => {
-        item1.isModified = () => true;
+        item1.fileState = lumine.FileState.REMOVED;
         lumine.commands.dispatch(paneElement, "tabs:close-saved-tabs");
         expect(pane.getItems().length).toBe(1);
         expect(pane.getItems()[0]).toBe(item1);

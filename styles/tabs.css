@@ -62,32 +62,16 @@
       cursor: default;
     }
 
-    /* Status indicator — owned by the tabs package so it renders consistently
-       across UI themes rather than each theme reimplementing it. It is a
-       DEDICATED element (.tab-status), decoupled from the close button. An
-       earlier version restyled the ✕ itself, which briefly flashed the ✕ when a
-       status cleared because the theme animated its transform back into view.
-       Keeping them separate means status changes never touch the ✕, so the
-       theme's hover animation is fully preserved. The marker has two concentric
-       parts:
-         - a filled DOT (the ::before) marks unsaved changes
-           (modified = accent color);
-         - a RING (its own border) marks the file's on-disk status
-           (deleted = removed color, conflict = modified color).
-       A single status shows just its part (a lone dot, or a lone ring); the two
-       combined nest the dot inside the ring (e.g. modified + deleted). It shows
-       only while the tab has a status and is not hovered; hovering hides it and
-       the theme reveals the ✕ as usual. Colors are driven by --tab-dot-color /
-       --tab-ring-color (deleted declared after conflict so it wins). */
+    /* A single filled dot represents the item's mutually exclusive file state.
+       It is separate from the close button so state changes cannot trigger the
+       theme's close-button animation. Hovering swaps the marker for the ✕. */
     .tab-status {
       display: none;
     }
 
-    &.modified:not(:hover) .tab-status,
-    &.deleted:not(:hover) .tab-status,
-    &.conflicted:not(:hover) .tab-status {
-      --tab-dot-color: transparent;
-      --tab-ring-color: transparent;
+    &[data-file-state="modified"]:not(:hover) .tab-status,
+    &[data-file-state="conflicted"]:not(:hover) .tab-status,
+    &[data-file-state="removed"]:not(:hover) .tab-status {
       position: absolute;
       top: 0;
       bottom: 0;
@@ -99,47 +83,33 @@
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       padding: 0;
-      border: 1px solid var(--tab-ring-color);
       border-radius: 50%;
-      background-color: transparent;
+      background-color: var(--tab-file-state-color);
       pointer-events: none;
-
-      &::before {
-        content: "";
-        display: block;
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background-color: var(--tab-dot-color);
-      }
     }
 
     /* Hide the ✕ while the marker is showing (the active tab's ✕ is otherwise
        always visible). Uses visibility, not the theme's animated transform, so
        clearing a status snaps the ✕ back with no flicker. */
-    &.modified:not(:hover) .close-icon,
-    &.deleted:not(:hover) .close-icon,
-    &.conflicted:not(:hover) .close-icon {
+    &[data-file-state="modified"]:not(:hover) .close-icon,
+    &[data-file-state="conflicted"]:not(:hover) .close-icon,
+    &[data-file-state="removed"]:not(:hover) .close-icon {
       visibility: hidden;
     }
 
-    /* Modified: a filled dot in the accent color. */
-    &.modified:not(:hover) .tab-status {
-      --tab-dot-color: var(--accent-color);
+    &[data-file-state="modified"] {
+      --tab-file-state-color: var(--accent-color);
     }
 
-    /* Conflict: a ring in the modified color. */
-    &.conflicted:not(:hover) .tab-status {
-      --tab-ring-color: var(--text-color-modified);
+    &[data-file-state="conflicted"] {
+      --tab-file-state-color: var(--text-color-modified);
     }
 
-    /* Deleted: a ring in the removed color (declared after conflict so it wins
-       when both are somehow set). */
-    &.deleted:not(:hover) .tab-status {
-      --tab-ring-color: var(--text-color-removed);
+    &[data-file-state="removed"] {
+      --tab-file-state-color: var(--text-color-removed);
     }
   }
 
