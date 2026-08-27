@@ -95,6 +95,27 @@ describe("Tabs package main", () => {
       // single row is not the label collision `merge` would have hidden.
       expect(labels.filter((label) => label === "Close Pane").length).toBe(1);
     });
+
+    it("offers Hide Dock only on tabs inside a dock and hides that dock", async () => {
+      const centerTab = tabBarElement.querySelector(".tab");
+      const dock = lumine.workspace.getLeftDock();
+      const dockItem = {
+        element: document.createElement("div"),
+        getTitle() {
+          return "Dock Item";
+        },
+      };
+      dock.getActivePane().addItem(dockItem);
+      const dockTab = dock.getElement().querySelector(".tab");
+
+      expect(labelsFor(centerTab)).not.toContain("Hide Dock");
+      expect(labelsFor(dockTab)).toContain("Hide Dock");
+
+      jasmine.attachToDOM(lumine.workspace.getElement());
+      dock.show();
+      await lumine.commands.dispatch(dockTab, "dock:hide");
+      expect(dock.isVisible()).toBe(false);
+    });
   });
 });
 

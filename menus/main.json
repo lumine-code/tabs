@@ -95,6 +95,18 @@
       {
         "type": "separator"
       }
+    ],
+    "lumine-dock .tab-bar": [
+      {
+        "type": "separator"
+      },
+      {
+        "label": "Hide Dock",
+        "command": "dock:hide"
+      },
+      {
+        "type": "separator"
+      }
     ]
   }
 }
