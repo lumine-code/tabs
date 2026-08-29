@@ -19,6 +19,13 @@ const buildMouseEvent = (type, target, param) => {
       },
     });
   }
+  if (param?.metaKey != null) {
+    Object.defineProperty(event, "metaKey", {
+      get() {
+        return param.metaKey;
+      },
+    });
+  }
   if (param?.which != null) {
     Object.defineProperty(event, "which", {
       get() {
@@ -32,6 +39,15 @@ const buildMouseEvent = (type, target, param) => {
         return param?.relatedTarget;
       },
     });
+  }
+  for (const coordinate of ["clientX", "clientY", "pageX", "pageY"]) {
+    if (param?.[coordinate] != null) {
+      Object.defineProperty(event, coordinate, {
+        get() {
+          return param[coordinate];
+        },
+      });
+    }
   }
   Object.defineProperty(event, "target", {
     get() {
@@ -70,12 +86,20 @@ module.exports.triggerClickEvent = function (target, options) {
 module.exports.buildDragEvents = function (dragged, dropTarget) {
   const dataTransfer = {
     data: {},
+    files: [],
+    effectAllowed: "uninitialized",
+    dropEffect: "none",
     setData(key, value) {
       return (this.data[key] = `${value}`);
     }, // Drag events stringify data values
     getData(key) {
       return this.data[key];
     },
+    clearData(key) {
+      if (key) delete this.data[key];
+      else this.data = {};
+    },
+    setDragImage() {},
   };
 
   Object.defineProperty(dataTransfer, "items", {
@@ -86,21 +110,20 @@ module.exports.buildDragEvents = function (dragged, dropTarget) {
     },
   });
 
-  const dragStartEvent = buildMouseEvent("dragstart", dragged);
-  Object.defineProperty(dragStartEvent, "dataTransfer", {
-    get() {
-      return dataTransfer;
-    },
-  });
-
-  const dropEvent = buildMouseEvent("drop", dropTarget);
-  Object.defineProperty(dropEvent, "dataTransfer", {
-    get() {
-      return dataTransfer;
-    },
-  });
+  const dragStartEvent = module.exports.buildDragEvent("dragstart", dragged, dataTransfer);
+  const dropEvent = module.exports.buildDragEvent("drop", dropTarget, dataTransfer);
 
   return [dragStartEvent, dropEvent];
+};
+
+module.exports.buildDragEvent = function (type, target, dataTransfer, options) {
+  const event = buildMouseEvent(type, target, options);
+  Object.defineProperty(event, "dataTransfer", {
+    get() {
+      return dataTransfer;
+    },
+  });
+  return event;
 };
 
 module.exports.buildWheelEvent = (delta) => new WheelEvent("mousewheel", { wheelDeltaY: delta });

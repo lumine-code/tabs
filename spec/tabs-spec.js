@@ -4,10 +4,12 @@ const temp = require("@lumine-code/temp");
 const TabBarView = require("../lib/tab-bar-view");
 const layout = require("../lib/layout");
 const main = require("../lib/main");
+const FILE_PATHS_TYPE = "application/x-lumine-file-paths";
 let {
   triggerMouseEvent,
   triggerClickEvent,
   buildDragEvents,
+  buildDragEvent,
   buildDragEnterLeaveEvents,
   buildWheelEvent,
   buildWheelPlusShiftEvent,
@@ -1405,6 +1407,18 @@ describe("TabBarView", () => {
     });
 
     describe("when a tab is dragged over a pane item", () => {
+      const buildPaneDrag = (sourceTabBar, tab, targetPane, x, y) => {
+        const itemViews = targetPane.pane.getElement().querySelector(":scope > .item-views");
+        const [dragStartEvent, dropEvent] = buildDragEvents(tab, itemViews);
+        sourceTabBar.onDragStart(dragStartEvent);
+        const dragEnterEvent = buildDragEvent("dragenter", itemViews, dragStartEvent.dataTransfer);
+        const dragOverEvent = buildDragEvent("dragover", itemViews, dragStartEvent.dataTransfer, {
+          clientX: x,
+          clientY: y,
+        });
+        return { itemViews, dragStartEvent, dragEnterEvent, dragOverEvent, dropEvent };
+      };
+
       beforeEach(() => {
         jasmine.attachToDOM(lumine.workspace.getElement());
         return layout.activate();
@@ -1415,6 +1429,28 @@ describe("TabBarView", () => {
         return (layout.test = {});
       });
 
+      it("uses the same five center and split zones for every target-driven drag", () => {
+        const itemViews = pane.getElement().querySelector(":scope > .item-views");
+        layout.test.rect = { top: 0, left: 0, width: 120, height: 90 };
+        const cases = [
+          { point: [10, 45], split: "left", bounds: ["0px", "0px", "60px", "90px"] },
+          { point: [110, 45], split: "right", bounds: ["60px", "0px", "60px", "90px"] },
+          { point: [60, 10], split: "up", bounds: ["0px", "0px", "120px", "45px"] },
+          { point: [60, 80], split: "down", bounds: ["0px", "45px", "120px", "45px"] },
+          { point: [60, 45], split: undefined, bounds: ["0px", "0px", "120px", "90px"] },
+        ];
+
+        for (const { point, split, bounds } of cases) {
+          expect(layout.updateView(itemViews, point)).toBe(split);
+          expect([
+            layout.view.style.left,
+            layout.view.style.top,
+            layout.view.style.width,
+            layout.view.style.height,
+          ]).toEqual(bounds);
+        }
+      });
+
       it("draws an overlay over the item", () => {
         expect(tabBar.getTabs().map((tab) => tab.element.textContent)).toEqual([
           "Item 1",
@@ -1422,21 +1458,38 @@ describe("TabBarView", () => {
           "Item 2",
         ]);
         const tab = tabBar.tabAtIndex(2).element;
-        layout.test = {
-          pane,
-          itemView: pane.getElement().querySelector(".item-views"),
-          rect: { top: 0, left: 0, width: 100, height: 100 },
-        };
+        layout.test.rect = { top: 0, left: 0, width: 100, height: 100 };
+        const { itemViews, dragStartEvent, dragEnterEvent, dragOverEvent } = buildPaneDrag(
+          tabBar,
+          tab,
+          tabBar,
+          50,
+          50,
+        );
 
         expect(layout.view.classList.contains("visible")).toBe(false);
-        // Drag into pane
-        tab.ondrag({ target: tab, clientX: 50, clientY: 50 });
+        itemViews.dispatchEvent(dragEnterEvent);
+        expect(dragStartEvent.dataTransfer.effectAllowed).toBe("move");
+        expect(dragEnterEvent.dataTransfer.dropEffect).toBe("move");
+        itemViews.dispatchEvent(dragOverEvent);
         expect(layout.view.classList.contains("visible")).toBe(true);
         expect(layout.view.style.height).toBe("100px");
         expect(layout.view.style.width).toBe("100px");
-        // Drag out of pane
-        delete layout.test.pane;
-        tab.ondrag({ target: tab, clientX: 200, clientY: 200 });
+
+        const ambiguousDragLeave = buildDragEvent(
+          "dragleave",
+          itemViews,
+          dragStartEvent.dataTransfer,
+        );
+        itemViews.dispatchEvent(ambiguousDragLeave);
+        expect(ambiguousDragLeave.dataTransfer.dropEffect).toBe("move");
+        expect(layout.view.classList.contains("visible")).toBe(true);
+        itemViews.dispatchEvent(dragEnterEvent);
+
+        const dragLeaveEvent = buildDragEvent("dragleave", itemViews, dragStartEvent.dataTransfer, {
+          relatedTarget: document.body,
+        });
+        itemViews.dispatchEvent(dragLeaveEvent);
         expect(layout.view.classList.contains("visible")).toBe(false);
       });
 
@@ -1447,14 +1500,13 @@ describe("TabBarView", () => {
           "Item 2",
         ]);
         const tab = tabBar.tabAtIndex(2).element;
-        layout.test = {
-          pane,
-          itemView: pane.getElement().querySelector(".item-views"),
-          rect: { top: 0, left: 0, width: 100, height: 100 },
-        };
+        layout.test.rect = { top: 0, left: 0, width: 100, height: 100 };
+        const { itemViews, dragOverEvent, dropEvent } = buildPaneDrag(tabBar, tab, tabBar, 80, 50);
 
-        tab.ondrag({ target: tab, clientX: 80, clientY: 50 });
-        tab.ondragend({ target: tab, clientX: 80, clientY: 50 });
+        itemViews.dispatchEvent(dragOverEvent);
+        expect(layout.view.style.left).toBe("50px");
+        expect(layout.view.style.width).toBe("50px");
+        itemViews.dispatchEvent(dropEvent);
         expect(lumine.workspace.getCenter().getPanes().length).toEqual(2);
         expect(tabBar.getTabs().map((tab) => tab.element.textContent)).toEqual([
           "Item 1",
@@ -1469,14 +1521,18 @@ describe("TabBarView", () => {
           tabBar.getTabs()[1].element.querySelector(".close-icon").click();
           expect(tabBar.getTabs().map((tab) => tab.element.textContent)).toEqual(["sample.js"]);
           const tab = tabBar.tabAtIndex(0).element;
-          layout.test = {
-            pane,
-            itemView: pane.getElement().querySelector(".item-views"),
-            rect: { top: 0, left: 0, width: 100, height: 100 },
-          };
+          layout.test.rect = { top: 0, left: 0, width: 100, height: 100 };
+          const { itemViews, dragOverEvent, dropEvent } = buildPaneDrag(
+            tabBar,
+            tab,
+            tabBar,
+            80,
+            50,
+          );
 
-          tab.ondrag({ target: tab, clientX: 80, clientY: 50 });
-          tab.ondragend({ target: tab, clientX: 80, clientY: 50 });
+          itemViews.dispatchEvent(dragOverEvent);
+          expect(layout.view.style.width).toBe("100px");
+          itemViews.dispatchEvent(dropEvent);
           expect(lumine.workspace.getCenter().getPanes().length).toEqual(1);
           expect(tabBar.getTabs().map((tab) => tab.element.textContent)).toEqual(["sample.js"]);
         }));
@@ -1490,15 +1546,20 @@ describe("TabBarView", () => {
             "Item 2",
           ]);
           expect(toPane.getItems().length).toBe(0);
+          const toTabBar = new TabBarView(toPane, "center");
           const tab = tabBar.tabAtIndex(2).element;
-          layout.test = {
-            pane: toPane,
-            itemView: toPane.getElement().querySelector(".item-views"),
-            rect: { top: 0, left: 0, width: 100, height: 100 },
-          };
+          layout.test.rect = { top: 0, left: 0, width: 100, height: 100 };
+          const { itemViews, dragOverEvent, dropEvent } = buildPaneDrag(
+            tabBar,
+            tab,
+            toTabBar,
+            80,
+            50,
+          );
 
-          tab.ondrag({ target: tab, clientX: 80, clientY: 50 });
-          tab.ondragend({ target: tab, clientX: 80, clientY: 50 });
+          itemViews.dispatchEvent(dragOverEvent);
+          expect(layout.view.style.width).toBe("100px");
+          itemViews.dispatchEvent(dropEvent);
           expect(lumine.workspace.getCenter().getPanes().length).toEqual(2);
           expect(tabBar.getTabs().map((tab) => tab.element.textContent)).toEqual([
             "Item 1",
@@ -1509,22 +1570,154 @@ describe("TabBarView", () => {
 
       describe("when the tab is not allowed in that pane", () =>
         it("does not move the tab, nor does it create a split", () => {
-          layout.test = {
-            pane,
-            itemView: pane.getElement().querySelector(".item-views"),
-            rect: { top: 0, left: 0, width: 100, height: 100 },
-          };
-
-          spyOn(layout, "itemIsAllowedInPane").and.returnValue(false);
-          spyOn(pane, "split");
-
           const tab = tabBar.tabAtIndex(0).element;
-          tab.ondrag({ target: tab, clientX: 80, clientY: 50 });
-          layout.lastSplit = "left";
-          tab.ondragend({ target: tab, clientX: 80, clientY: 50 });
+          layout.test.rect = { top: 0, left: 0, width: 100, height: 100 };
+          const { itemViews, dragOverEvent, dropEvent } = buildPaneDrag(
+            tabBar,
+            tab,
+            tabBar,
+            80,
+            50,
+          );
+          spyOn(tabBar, "itemIsAllowed").and.returnValue(false);
+          spyOn(pane, "splitRight");
 
-          expect(pane.split).not.toHaveBeenCalled();
+          itemViews.dispatchEvent(dragOverEvent);
+          itemViews.dispatchEvent(dropEvent);
+
+          expect(layout.view.classList.contains("visible")).toBe(false);
+          expect(pane.splitRight).not.toHaveBeenCalled();
+          expect(pane.getItems()).toEqual([item1, editor1, item2]);
         }));
+    });
+
+    describe("when files from the tree view are dragged into the workspace", () => {
+      const buildFileDrag = (target, paths, { x = 50, y = 50, pageX = x } = {}) => {
+        const [, baseDropEvent] = buildDragEvents(tabBar.tabAtIndex(0).element, target);
+        const { dataTransfer } = baseDropEvent;
+        dataTransfer.setData(
+          FILE_PATHS_TYPE,
+          typeof paths === "string" ? paths : JSON.stringify(paths),
+        );
+        dataTransfer.setData("from-window-id", tabBar.getWindowId() + 1);
+        return {
+          dragEnterEvent: buildDragEvent("dragenter", target, dataTransfer, {
+            clientX: x,
+            clientY: y,
+            pageX,
+          }),
+          dragOverEvent: buildDragEvent("dragover", target, dataTransfer, {
+            clientX: x,
+            clientY: y,
+            pageX,
+          }),
+          dropEvent: buildDragEvent("drop", target, dataTransfer, {
+            clientX: x,
+            clientY: y,
+            pageX,
+          }),
+        };
+      };
+
+      beforeEach(() => {
+        jasmine.attachToDOM(lumine.workspace.getElement());
+        layout.activate();
+        layout.test.rect = { top: 0, left: 0, width: 100, height: 100 };
+      });
+
+      afterEach(() => {
+        layout.deactivate();
+        layout.test = {};
+      });
+
+      it("opens a serialized multi-file drop from another window in the indicated split", async () => {
+        const itemViews = pane.getElement().querySelector(":scope > .item-views");
+        const directory = temp.mkdirSync("tabs-tree-drop-");
+        const paths = [path.join(directory, "one.txt"), path.join(directory, "two.txt")];
+        const { dragEnterEvent, dragOverEvent, dropEvent } = buildFileDrag(itemViews, paths, {
+          x: 80,
+          y: 50,
+        });
+
+        itemViews.dispatchEvent(dragEnterEvent);
+        expect(dragEnterEvent.dataTransfer.dropEffect).toBe("copy");
+        itemViews.dispatchEvent(dragOverEvent);
+        expect(layout.view.classList.contains("visible")).toBe(true);
+        expect(layout.view.style.left).toBe("50px");
+        expect(layout.view.style.width).toBe("50px");
+        expect(dragOverEvent.dataTransfer.dropEffect).toBe("copy");
+
+        itemViews.dispatchEvent(dropEvent);
+        await conditionPromise(() => lumine.workspace.getCenter().getPanes().length === 2);
+        const targetPane = lumine.workspace.getActivePane();
+        await conditionPromise(() => targetPane.getItems().length === 2);
+
+        expect(targetPane.getItems().map((item) => item.getPath())).toEqual(paths);
+        expect(targetPane.getActiveItem().getPath()).toBe(paths[1]);
+        expect(targetPane.isFocused()).toBe(true);
+        expect(pane.getItems()).toEqual([item1, editor1, item2]);
+        expect(layout.view.classList.contains("visible")).toBe(false);
+      });
+
+      it("opens files in an existing empty pane without creating another split", async () => {
+        const targetPane = pane.splitRight();
+        const targetTabBar = new TabBarView(targetPane, "center");
+        const itemViews = targetPane.getElement().querySelector(":scope > .item-views");
+        const filePath = path.join(temp.mkdirSync("tabs-tree-empty-"), "empty.txt");
+        const { dragOverEvent, dropEvent } = buildFileDrag(itemViews, [filePath], {
+          x: 80,
+          y: 50,
+        });
+
+        itemViews.dispatchEvent(dragOverEvent);
+        expect(layout.view.style.width).toBe("100px");
+        itemViews.dispatchEvent(dropEvent);
+        await conditionPromise(() => targetPane.getItems().length === 1);
+
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(2);
+        expect(targetTabBar.getTabs().map((tab) => tab.item.getPath())).toEqual([filePath]);
+      });
+
+      it("opens files at the indicated tab-bar index without a pane overlay", async () => {
+        const targetTab = tabBar.tabAtIndex(1).element;
+        spyOn(targetTab, "getBoundingClientRect").and.returnValue({ left: 100, width: 100 });
+        const directory = temp.mkdirSync("tabs-tree-bar-");
+        const paths = [path.join(directory, "one.txt"), path.join(directory, "two.txt")];
+        const { dragOverEvent, dropEvent } = buildFileDrag(targetTab, paths, {
+          x: 110,
+          y: 10,
+          pageX: 110,
+        });
+
+        tabBar.onDragOver(dragOverEvent);
+        expect(tabBar.getPlaceholder().parentElement).toBe(tabBar.element);
+        expect(layout.view.classList.contains("visible")).toBe(false);
+        await tabBar.onDrop(dropEvent);
+
+        expect(pane.getItems().map((item) => item.getPath?.() ?? item.getTitle())).toEqual([
+          "Item 1",
+          paths[0],
+          paths[1],
+          editor1.getPath(),
+          "Item 2",
+        ]);
+        expect(pane.getActiveItem().getPath()).toBe(paths[1]);
+      });
+
+      it("does not create a split for a malformed serialized file drop", () => {
+        const itemViews = pane.getElement().querySelector(":scope > .item-views");
+        const { dragOverEvent, dropEvent } = buildFileDrag(itemViews, "not-json", {
+          x: 80,
+          y: 50,
+        });
+        spyOn(pane, "splitRight");
+
+        itemViews.dispatchEvent(dragOverEvent);
+        itemViews.dispatchEvent(dropEvent);
+
+        expect(pane.splitRight).not.toHaveBeenCalled();
+        expect(pane.getItems()).toEqual([item1, editor1, item2]);
+      });
     });
 
     describe("when a non-tab is dragged to pane", () =>
@@ -1601,6 +1794,122 @@ describe("TabBarView", () => {
         const editor = lumine.workspace.getActiveTextEditor();
         expect(editor.getPath()).toBe(editor1.getPath());
         expect(pane.getItems()).toEqual([item1, editor, item2]);
+      });
+
+      it("opens the tab when it is dropped on an empty pane in the second window", async () => {
+        const toPane = pane.splitRight();
+        const toTabBar = new TabBarView(toPane, "center");
+        jasmine.attachToDOM(lumine.workspace.getElement());
+        const itemViews = toPane.getElement().querySelector(":scope > .item-views");
+
+        const [dragStartEvent, dropEvent] = Array.from(
+          buildDragEvents(tabBar.tabAtIndex(1).element, itemViews),
+        );
+        tabBar.onDragStart(dragStartEvent);
+        tabBar.onDropOnOtherWindow({
+          targetWindowId: tabBar.getWindowId(),
+          fromPaneId: pane.id,
+          fromItemIndex: 1,
+        });
+
+        await conditionPromise(
+          () => pane.destroyItem.calls.count() === 1,
+          "dragged pane item to be destroyed",
+        );
+
+        dropEvent.dataTransfer.setData("from-window-id", toTabBar.getWindowId() + 1);
+        spyOn(toTabBar, "moveItemBetweenPanes").and.callThrough();
+        itemViews.dispatchEvent(dropEvent);
+
+        await conditionPromise(() => toTabBar.moveItemBetweenPanes.calls.count() > 0);
+
+        expect(toPane.getItems().length).toBe(1);
+        expect(toPane.getActiveItem().getPath()).toBe(editor1.getPath());
+        expect(lumine.workspace.getActivePane()).toBe(toPane);
+        expect(toPane.isFocused()).toBe(true);
+      });
+
+      it("shows the same split overlay and creates the split in the second window", async () => {
+        jasmine.attachToDOM(lumine.workspace.getElement());
+        layout.activate();
+        layout.test.rect = { top: 0, left: 0, width: 100, height: 100 };
+        const itemViews = pane.getElement().querySelector(":scope > .item-views");
+        const editorPath = editor1.getPath();
+        const [dragStartEvent, dropEvent] = Array.from(
+          buildDragEvents(tabBar.tabAtIndex(1).element, itemViews),
+        );
+
+        try {
+          tabBar.onDragStart(dragStartEvent);
+          tabBar.onDropOnOtherWindow({
+            targetWindowId: tabBar.getWindowId(),
+            fromPaneId: pane.id,
+            fromItemIndex: 1,
+          });
+          await conditionPromise(
+            () => pane.destroyItem.calls.count() === 1,
+            "dragged pane item to be destroyed",
+          );
+
+          const remoteWindowId = tabBar.getWindowId() + 1;
+          dragStartEvent.dataTransfer.setData("from-window-id", remoteWindowId);
+          dragStartEvent.dataTransfer.clearData(`lumine-tab-source-window-${tabBar.getWindowId()}`);
+          dragStartEvent.dataTransfer.setData(`lumine-tab-source-window-${remoteWindowId}`, "true");
+          const dragOverEvent = buildDragEvent("dragover", itemViews, dragStartEvent.dataTransfer, {
+            clientX: 80,
+            clientY: 50,
+          });
+
+          itemViews.dispatchEvent(dragOverEvent);
+          expect(layout.view.style.left).toBe("50px");
+          expect(layout.view.style.width).toBe("50px");
+          itemViews.dispatchEvent(dropEvent);
+
+          await conditionPromise(() => lumine.workspace.getCenter().getPanes().length === 2);
+          const targetPane = lumine.workspace.getActivePane();
+          await conditionPromise(() => targetPane.getItems().length === 1);
+
+          expect(targetPane.getActiveItem().getPath()).toBe(editorPath);
+          expect(targetPane.isFocused()).toBe(true);
+          expect(pane.getItems()).toEqual([item1, item2]);
+          expect(layout.view.classList.contains("visible")).toBe(false);
+        } finally {
+          layout.deactivate();
+          layout.test = {};
+        }
+      });
+
+      it("handles a same-window drop on an empty pane from the target pane", () => {
+        const toPane = pane.splitRight();
+        const _toTabBar = new TabBarView(toPane, "center");
+        jasmine.attachToDOM(lumine.workspace.getElement());
+        const itemViews = toPane.getElement().querySelector(":scope > .item-views");
+        const [dragStartEvent, dropEvent] = Array.from(
+          buildDragEvents(tabBar.tabAtIndex(1).element, itemViews),
+        );
+        tabBar.onDragStart(dragStartEvent);
+
+        itemViews.dispatchEvent(dropEvent);
+
+        expect(toPane.getItems()).toEqual([editor1]);
+        expect(pane.getItems()).toEqual([item1, item2]);
+      });
+
+      it("does not handle a cross-window tab-bar drop again when it bubbles to the pane", () => {
+        const toPane = pane.splitRight();
+        const toTabBar = new TabBarView(toPane, "center");
+        jasmine.attachToDOM(lumine.workspace.getElement());
+        toPane.getElement().insertBefore(toTabBar.element, toPane.getElement().firstChild);
+        const [dragStartEvent, dropEvent] = Array.from(
+          buildDragEvents(tabBar.tabAtIndex(1).element, toTabBar.element),
+        );
+        tabBar.onDragStart(dragStartEvent);
+        dropEvent.dataTransfer.setData("from-window-id", toTabBar.getWindowId() + 1);
+        spyOn(lumine.workspace, "open").and.returnValue(Promise.resolve(null));
+
+        toTabBar.element.dispatchEvent(dropEvent);
+
+        expect(lumine.workspace.open.calls.count()).toBe(1);
       });
 
       it("transfers the text of the editor when it is modified", async () => {
