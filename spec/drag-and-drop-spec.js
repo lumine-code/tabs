@@ -72,7 +72,7 @@ describe("Tabs workspace drag-and-drop integration", () => {
     });
 
     const events = dispatchDrag(source, itemViews, { x: 80, y: 50 });
-    await conditionPromise(() => lumine.workspace.getCenter().getPanes().length === 2);
+    await conditionPromise(() => lumine.workspace.getCenter().getTiledPanes().length === 2);
     const targetPane = lumine.workspace.getActivePane();
 
     expect(events.dragOver.defaultPrevented).toBe(true);
@@ -96,7 +96,7 @@ describe("Tabs workspace drag-and-drop integration", () => {
 
     expect(pane.getItems()).toEqual([firstItem, secondItem]);
     expect(pane.getActiveItem()).toBe(secondItem);
-    expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
+    expect(lumine.workspace.getCenter().getTiledPanes().length).toBe(1);
   });
 
   it("opens tree-view files at the tab-bar insertion index", async () => {
