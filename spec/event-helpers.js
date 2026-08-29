@@ -59,7 +59,7 @@ const buildMouseEvent = (type, target, param) => {
       return target;
     },
   });
-  spyOn(event, "preventDefault");
+  spyOn(event, "preventDefault").and.callThrough();
   return event;
 };
 
@@ -131,46 +131,3 @@ module.exports.buildWheelEvent = (delta) => new WheelEvent("mousewheel", { wheel
 
 module.exports.buildWheelPlusShiftEvent = (delta) =>
   new WheelEvent("mousewheel", { wheelDeltaY: delta, shiftKey: true });
-
-module.exports.buildDragEnterLeaveEvents = (enterRelatedTarget, leaveRelatedTarget) => {
-  const dataTransfer = {
-    data: {},
-    setData(key, value) {
-      this.data[key] = `${value}`; // Drag events stringify data values
-    },
-    getData(key) {
-      return this.data[key];
-    },
-    clearData(key) {
-      if (key) {
-        delete this.data[key];
-      } else {
-        this.data = {};
-      }
-    },
-  };
-
-  Object.defineProperty(dataTransfer, "items", {
-    get() {
-      return Object.keys(dataTransfer.data).map((key) => ({ type: key }));
-    },
-  });
-
-  const dragEnterEvent = buildMouseEvent("dragenter", null, { relatedTarget: enterRelatedTarget });
-  Object.defineProperty(dragEnterEvent, "dataTransfer", {
-    get() {
-      return dataTransfer;
-    },
-  });
-  dragEnterEvent.dataTransfer.setData("lumine-tab-event", "true");
-
-  const dragLeaveEvent = buildMouseEvent("dragleave", null, { relatedTarget: leaveRelatedTarget });
-  Object.defineProperty(dragLeaveEvent, "dataTransfer", {
-    get() {
-      return dataTransfer;
-    },
-  });
-  dragLeaveEvent.dataTransfer.setData("lumine-tab-event", "true");
-
-  return [dragEnterEvent, dragLeaveEvent];
-};
