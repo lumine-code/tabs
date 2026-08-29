@@ -87,6 +87,7 @@ module.exports.buildDragEvents = function (dragged, dropTarget) {
   const dataTransfer = {
     data: {},
     files: [],
+    nativeItems: [],
     effectAllowed: "uninitialized",
     dropEffect: "none",
     setData(key, value) {
@@ -104,9 +105,9 @@ module.exports.buildDragEvents = function (dragged, dropTarget) {
 
   Object.defineProperty(dataTransfer, "items", {
     get() {
-      return Object.keys(dataTransfer.data).map((key) => ({
-        type: key,
-      }));
+      return dataTransfer.nativeItems.concat(
+        Object.keys(dataTransfer.data).map((key) => ({ kind: "string", type: key })),
+      );
     },
   });
 

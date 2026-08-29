@@ -1,6 +1,7 @@
 const _ = require("@lumine-code/underscore-plus");
 const path = require("path");
 const temp = require("@lumine-code/temp");
+const { webUtils } = require("electron");
 const TabBarView = require("../lib/tab-bar-view");
 const layout = require("../lib/layout");
 const main = require("../lib/main");
@@ -1717,6 +1718,183 @@ describe("TabBarView", () => {
 
         expect(pane.splitRight).not.toHaveBeenCalled();
         expect(pane.getItems()).toEqual([item1, editor1, item2]);
+      });
+    });
+
+    describe("when files and folders are dragged from the operating system", () => {
+      const buildNativeDrag = (
+        target,
+        entries,
+        { x = 50, y = 50, pageX = x, revealEntries = true } = {},
+      ) => {
+        const [, baseDropEvent] = buildDragEvents(tabBar.tabAtIndex(0).element, target);
+        const { dataTransfer } = baseDropEvent;
+        const pathsByFile = new Map();
+        for (const entry of entries) {
+          const file = {};
+          pathsByFile.set(file, entry.path);
+          dataTransfer.files.push(file);
+          dataTransfer.nativeItems.push({
+            kind: "file",
+            type: entry.kind === "file" ? "text/plain" : "",
+            webkitGetAsEntry: () =>
+              revealEntries
+                ? { isFile: entry.kind === "file", isDirectory: entry.kind === "directory" }
+                : null,
+          });
+        }
+        spyOn(webUtils, "getPathForFile").and.callFake((file) => pathsByFile.get(file) ?? "");
+        return {
+          dataTransfer,
+          dragEnterEvent: buildDragEvent("dragenter", target, dataTransfer, {
+            clientX: x,
+            clientY: y,
+            pageX,
+          }),
+          dragOverEvent: buildDragEvent("dragover", target, dataTransfer, {
+            clientX: x,
+            clientY: y,
+            pageX,
+          }),
+          dropEvent: buildDragEvent("drop", target, dataTransfer, {
+            clientX: x,
+            clientY: y,
+            pageX,
+          }),
+        };
+      };
+
+      beforeEach(() => {
+        jasmine.attachToDOM(lumine.workspace.getElement());
+        layout.activate();
+        layout.test.rect = { top: 0, left: 0, width: 100, height: 100 };
+      });
+
+      afterEach(() => {
+        layout.deactivate();
+        layout.test = {};
+      });
+
+      it("opens files in the indicated split and adds folders to the target window", async () => {
+        const itemViews = pane.getElement().querySelector(":scope > .item-views");
+        const directoryPath = temp.mkdirSync("tabs-native-folder-");
+        const filePath = path.join(directoryPath, "outside.txt");
+        spyOn(lumine.application, "openWindow");
+        const { dragEnterEvent, dragOverEvent, dropEvent } = buildNativeDrag(
+          itemViews,
+          [
+            { kind: "file", path: filePath },
+            { kind: "directory", path: directoryPath },
+          ],
+          { x: 80, y: 50 },
+        );
+
+        itemViews.dispatchEvent(dragEnterEvent);
+        expect(dragEnterEvent.dataTransfer.dropEffect).toBe("copy");
+        itemViews.dispatchEvent(dragOverEvent);
+        expect(layout.view.style.left).toBe("50px");
+        expect(layout.view.style.width).toBe("50px");
+        itemViews.dispatchEvent(dropEvent);
+
+        await conditionPromise(() => lumine.workspace.getCenter().getPanes().length === 2);
+        const targetPane = lumine.workspace.getActivePane();
+        await conditionPromise(() => targetPane.getItems().length === 1);
+
+        expect(targetPane.getActiveItem().getPath()).toBe(filePath);
+        expect(lumine.application.openWindow).toHaveBeenCalledWith({
+          pathsToOpen: [directoryPath],
+          here: true,
+        });
+      });
+
+      it("accepts a folder over a tab bar without showing an insertion placeholder", () => {
+        const directoryPath = temp.mkdirSync("tabs-native-bar-folder-");
+        const targetTab = tabBar.tabAtIndex(1).element;
+        spyOn(lumine.application, "openWindow");
+        const { dragOverEvent, dropEvent } = buildNativeDrag(targetTab, [
+          { kind: "directory", path: directoryPath },
+        ]);
+
+        tabBar.onDragOver(dragOverEvent);
+        expect(dragOverEvent.dataTransfer.dropEffect).toBe("copy");
+        expect(tabBar.placeholderEl).toBeNull();
+        expect(layout.view.classList.contains("visible")).toBe(false);
+        tabBar.onDrop(dropEvent);
+
+        expect(lumine.application.openWindow).toHaveBeenCalledWith({
+          pathsToOpen: [directoryPath],
+          here: true,
+        });
+        expect(pane.getItems()).toEqual([item1, editor1, item2]);
+      });
+
+      it("opens multiple native files at the indicated tab-bar index", async () => {
+        const targetTab = tabBar.tabAtIndex(1).element;
+        spyOn(targetTab, "getBoundingClientRect").and.returnValue({ left: 100, width: 100 });
+        const directoryPath = temp.mkdirSync("tabs-native-bar-files-");
+        const paths = [
+          path.join(directoryPath, "first.txt"),
+          path.join(directoryPath, "second.txt"),
+        ];
+        const { dragOverEvent, dropEvent } = buildNativeDrag(
+          targetTab,
+          paths.map((filePath) => ({ kind: "file", path: filePath })),
+          { x: 110, y: 10, pageX: 110 },
+        );
+
+        tabBar.onDragOver(dragOverEvent);
+        expect(tabBar.getPlaceholder().parentElement).toBe(tabBar.element);
+        await tabBar.onDrop(dropEvent);
+
+        expect(pane.getItems().map((item) => item.getPath?.() ?? item.getTitle())).toEqual([
+          "Item 1",
+          paths[0],
+          paths[1],
+          editor1.getPath(),
+          "Item 2",
+        ]);
+        expect(pane.getActiveItem().getPath()).toBe(paths[1]);
+      });
+
+      it("keeps split zones available when protected drag data hides a file's entry kind", async () => {
+        const itemViews = pane.getElement().querySelector(":scope > .item-views");
+        const filePath = path.join(temp.mkdirSync("tabs-native-protected-"), "outside.txt");
+        const { dragOverEvent, dropEvent } = buildNativeDrag(
+          itemViews,
+          [{ kind: "file", path: filePath }],
+          { x: 80, y: 50, revealEntries: false },
+        );
+
+        itemViews.dispatchEvent(dragOverEvent);
+        expect(layout.view.style.left).toBe("50px");
+        expect(layout.view.style.width).toBe("50px");
+        itemViews.dispatchEvent(dropEvent);
+        await conditionPromise(() => lumine.workspace.getCenter().getPanes().length === 2);
+        const targetPane = lumine.workspace.getActivePane();
+        await conditionPromise(() => targetPane.getItems().length === 1);
+
+        expect(targetPane.getActiveItem().getPath()).toBe(filePath);
+      });
+
+      it("does not leave an empty split when a protected native entry is a folder", () => {
+        const itemViews = pane.getElement().querySelector(":scope > .item-views");
+        const directoryPath = temp.mkdirSync("tabs-native-protected-folder-");
+        spyOn(lumine.application, "openWindow");
+        const { dragOverEvent, dropEvent } = buildNativeDrag(
+          itemViews,
+          [{ kind: "directory", path: directoryPath }],
+          { x: 80, y: 50, revealEntries: false },
+        );
+
+        itemViews.dispatchEvent(dragOverEvent);
+        expect(layout.view.style.width).toBe("50px");
+        itemViews.dispatchEvent(dropEvent);
+
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
+        expect(lumine.application.openWindow).toHaveBeenCalledWith({
+          pathsToOpen: [directoryPath],
+          here: true,
+        });
       });
     });
 
