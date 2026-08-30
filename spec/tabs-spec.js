@@ -37,16 +37,6 @@ describe("Tabs package main", () => {
       expect(tabBars[1].getAttribute("location")).toBe("center");
     }));
 
-  it("does not add a tab bar to a detached pane", async () => {
-    await Promise.resolve(lumine.packages.deactivatePackage("tabs"));
-    const detachedPane = lumine.workspace.getActivePane().splitRight();
-    spyOn(detachedPane, "isDetached").and.returnValue(true);
-
-    await lumine.packages.activatePackage("tabs");
-
-    expect(detachedPane.getElement().querySelector(".tab-bar")).toBeNull();
-  });
-
   describe(".deactivate()", () =>
     it("removes all tab bar views and stops adding them to new panes", async () => {
       const pane = lumine.workspace.getActivePane();
@@ -117,9 +107,7 @@ describe("Tabs package main", () => {
       const dockTab = dock.getElement().querySelector(".tab");
 
       expect(labelsFor(centerTab)).not.toContain("Hide Dock");
-      expect(labelsFor(centerTab)).toContain("Detach Tab");
       expect(labelsFor(dockTab)).toContain("Hide Dock");
-      expect(labelsFor(dockTab)).not.toContain("Detach Tab");
 
       jasmine.attachToDOM(lumine.workspace.getElement());
       dock.show();
@@ -311,36 +299,6 @@ describe("TabBarView", () => {
       expect(tabBar.tabAtIndex(0).element.style.maxWidth).toBe("");
       expect(tabBar.tabAtIndex(1).element.style.maxWidth).toBe("");
     }));
-
-  describe("when a tab drag ends", () => {
-    beforeEach(() => {
-      tabBar.draggedTab = tabBar.tabForItem(item1);
-      tabBar.dragToken = "drag-token";
-      spyOn(tabTransferService, "release");
-      spyOn(tabTransferService, "finishSession");
-      spyOn(lumine.workspace, "detachPaneItem").and.resolveTo();
-    });
-
-    it("cancels an unaccepted drag without detaching the item", () => {
-      tabBar.onDragEnd({ dataTransfer: { dropEffect: "none" } });
-
-      expect(lumine.workspace.detachPaneItem).not.toHaveBeenCalled();
-      expect(tabTransferService.release).toHaveBeenCalledOnceWith(
-        "drag-token",
-        "tab drag cancelled",
-      );
-      expect(tabTransferService.finishSession).not.toHaveBeenCalled();
-      expect(pane.getItems()).toContain(item1);
-    });
-
-    it("leaves an accepted drop session available for its target to commit", () => {
-      tabBar.onDragEnd({ dataTransfer: { dropEffect: "move" } });
-
-      expect(lumine.workspace.detachPaneItem).not.toHaveBeenCalled();
-      expect(tabTransferService.release).not.toHaveBeenCalled();
-      expect(tabTransferService.finishSession).toHaveBeenCalledOnceWith("drag-token");
-    });
-  });
 
   describe(".initialize(pane)", () => {
     it("creates a tab for each item on the tab bar's parent pane", () => {
@@ -991,12 +949,12 @@ describe("TabBarView", () => {
     describe("when tabs:split-up is fired", () =>
       it("splits the selected tab up", () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
-        expect(lumine.workspace.getCenter().getTiledPanes().length).toBe(1);
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
 
         lumine.commands.dispatch(tabBar.element, "tabs:split-up");
-        expect(lumine.workspace.getCenter().getTiledPanes().length).toBe(2);
-        expect(lumine.workspace.getCenter().getTiledPanes()[1]).toBe(pane);
-        expect(lumine.workspace.getCenter().getTiledPanes()[0].getItems()[0].getTitle()).toBe(
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(2);
+        expect(lumine.workspace.getCenter().getPanes()[1]).toBe(pane);
+        expect(lumine.workspace.getCenter().getPanes()[0].getItems()[0].getTitle()).toBe(
           item2.getTitle(),
         );
       }));
@@ -1004,12 +962,12 @@ describe("TabBarView", () => {
     describe("when tabs:split-down is fired", () =>
       it("splits the selected tab down", () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
-        expect(lumine.workspace.getCenter().getTiledPanes().length).toBe(1);
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
 
         lumine.commands.dispatch(tabBar.element, "tabs:split-down");
-        expect(lumine.workspace.getCenter().getTiledPanes().length).toBe(2);
-        expect(lumine.workspace.getCenter().getTiledPanes()[0]).toBe(pane);
-        expect(lumine.workspace.getCenter().getTiledPanes()[1].getItems()[0].getTitle()).toBe(
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(2);
+        expect(lumine.workspace.getCenter().getPanes()[0]).toBe(pane);
+        expect(lumine.workspace.getCenter().getPanes()[1].getItems()[0].getTitle()).toBe(
           item2.getTitle(),
         );
       }));
@@ -1017,12 +975,12 @@ describe("TabBarView", () => {
     describe("when tabs:split-left is fired", () =>
       it("splits the selected tab to the left", () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
-        expect(lumine.workspace.getCenter().getTiledPanes().length).toBe(1);
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
 
         lumine.commands.dispatch(tabBar.element, "tabs:split-left");
-        expect(lumine.workspace.getCenter().getTiledPanes().length).toBe(2);
-        expect(lumine.workspace.getCenter().getTiledPanes()[1]).toBe(pane);
-        expect(lumine.workspace.getCenter().getTiledPanes()[0].getItems()[0].getTitle()).toBe(
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(2);
+        expect(lumine.workspace.getCenter().getPanes()[1]).toBe(pane);
+        expect(lumine.workspace.getCenter().getPanes()[0].getItems()[0].getTitle()).toBe(
           item2.getTitle(),
         );
       }));
@@ -1030,26 +988,54 @@ describe("TabBarView", () => {
     describe("when tabs:split-right is fired", () =>
       it("splits the selected tab to the right", () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
-        expect(lumine.workspace.getCenter().getTiledPanes().length).toBe(1);
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
 
         lumine.commands.dispatch(tabBar.element, "tabs:split-right");
-        expect(lumine.workspace.getCenter().getTiledPanes().length).toBe(2);
-        expect(lumine.workspace.getCenter().getTiledPanes()[0]).toBe(pane);
-        expect(lumine.workspace.getCenter().getTiledPanes()[1].getItems()[0].getTitle()).toBe(
+        expect(lumine.workspace.getCenter().getPanes().length).toBe(2);
+        expect(lumine.workspace.getCenter().getPanes()[0]).toBe(pane);
+        expect(lumine.workspace.getCenter().getPanes()[1].getItems()[0].getTitle()).toBe(
           item2.getTitle(),
         );
       }));
 
-    it("hands the context-menu tab to core's detach command", async () => {
-      const tab = tabBar.tabForItem(item1);
-      jasmine.attachToDOM(lumine.workspace.getElement());
-      spyOn(lumine.workspace, "detachPaneItem").and.resolveTo();
+    describe("when tabs:open-in-new-window is fired", () => {
+      describe("by right-clicking on a tab", () => {
+        beforeEach(() => {
+          triggerClickEvent(tabBar.tabForItem(item1).element, { button: 2 });
+          expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
+          spyOn(lumine.application, "openWindow");
+        });
 
-      await lumine.commands.dispatch(tab.element, "pane:detach-item");
+        it("opens new window, closes current tab", () => {
+          lumine.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
+          expect(lumine.application.openWindow).toHaveBeenCalled();
 
-      expect(lumine.workspace.detachPaneItem).toHaveBeenCalledOnceWith(item1);
-      expect(pane.getItems()).toContain(item1);
-      expect(tabBar.tabForItem(item1)).toBe(tab);
+          expect(pane.getItems().length).toBe(2);
+          expect(tabBar.getTabs().length).toBe(2);
+          expect(tabBar.element.textContent).toMatch("Item 2");
+          expect(tabBar.element.textContent).not.toMatch("Item 1");
+        });
+
+        it("resets the width on every tab", () => {
+          // mouseenter (which will get emitted when going to right-click the tab) fixes the tab widths
+          // Make sure after the command is executed the widths are reset
+          triggerMouseEvent("mouseenter", tabBar.element);
+          lumine.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
+
+          jasmine.attachToDOM(tabBar.element);
+          expect(tabBar.tabAtIndex(0).element.style.maxWidth).toBe("");
+          expect(tabBar.tabAtIndex(1).element.style.maxWidth).toBe("");
+        });
+      });
+
+      describe("from the command palette", () =>
+        // See #309 for background
+
+        it("does nothing", () => {
+          spyOn(lumine.application, "openWindow");
+          lumine.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
+          expect(lumine.application.openWindow).not.toHaveBeenCalled();
+        }));
     });
   });
 

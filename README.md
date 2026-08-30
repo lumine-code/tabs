@@ -7,7 +7,6 @@ Display a selectable tab for each open item in a pane.
 - **Per-pane tabs**: shows a tab bar with a tab for every open editor and item in each pane.
 - **Tab management**: close a single tab, other tabs, saved tabs, or every tab at once.
 - **Split from a tab**: split the active tab up, down, left, or right into a new pane.
-- **Detached panes**: move a tab into a window of its own from its context menu.
 - **File icons**: shows the icon an item names for itself, and a file-type icon when an icon package is installed.
 - **VCS coloring**: color tab file names based on their version control status.
 
@@ -29,7 +28,8 @@ Commands available in `lumine-pane`:
 - `tabs:close-tabs-to-right`: close all tabs to the right of the active tab,
 - `tabs:close-tabs-to-left`: close all tabs to the left of the active tab,
 - `tabs:close-saved-tabs`: close all tabs with no unsaved changes,
-- `tabs:close-all-tabs`: close every tab in the pane.
+- `tabs:close-all-tabs`: close every tab in the pane,
+- `tabs:open-in-new-window`: open the active tab's item in a new window.
 
 Commands available in `.tab-bar`:
 
@@ -43,8 +43,6 @@ Commands available in `.tab-bar`:
 - `tabs:split-down`: split the target tab into a pane below,
 - `tabs:split-left`: split the target tab into a pane to the left,
 - `tabs:split-right`: split the target tab into a pane to the right.
-
-The tab context menu exposes core's `pane:detach-item` command for its target tab.
 
 ## Customization
 

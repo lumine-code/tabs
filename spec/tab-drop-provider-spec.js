@@ -17,7 +17,6 @@ describe("TabDropProvider", () => {
       getItems: () => pane.items,
       getActiveItem: () => pane.activeItem,
       getActiveItemIndex: () => pane.items.indexOf(pane.activeItem),
-      isDetached: () => false,
       moveItem: jasmine.createSpy("moveItem").and.callFake((movedItem, index) => {
         pane.items.splice(pane.items.indexOf(movedItem), 1);
         pane.items.splice(index, 0, movedItem);
@@ -98,15 +97,6 @@ describe("TabDropProvider", () => {
     ).toEqual({ effect: "move", allowedLocations: ["center"], allowSplit: false });
     expect(provider.propose({ offer: descriptor(), pane: targetPane }).allowSplit).toBe(true);
     expect(provider.propose({ offer: { kind: "paths" }, pane: targetPane })).toBeNull();
-  });
-
-  it("never claims or prepares a drop into a detached pane", () => {
-    spyOn(targetPane, "isDetached").and.returnValue(true);
-    const payload = descriptor({ source: { windowId: 8, paneId: 11, onlyItem: false } });
-
-    expect(provider.propose({ offer: payload, pane: targetPane })).toBeNull();
-    expect(provider.prepareDrop({ descriptor: payload, pane: targetPane })).toBeNull();
-    expect(workspace.open).not.toHaveBeenCalled();
   });
 
   it("validates the complete descriptor and resolves the exact same-window session", () => {

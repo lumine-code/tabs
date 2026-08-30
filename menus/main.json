@@ -60,13 +60,13 @@
         "type": "separator"
       }
     ],
-    ".tab-bar[location=\"center\"] .tab": [
+    ".tab.texteditor": [
       {
         "type": "separator"
       },
       {
-        "label": "Detach Tab",
-        "command": "pane:detach-item"
+        "label": "Open In New Window",
+        "command": "tabs:open-in-new-window"
       },
       {
         "type": "separator"
