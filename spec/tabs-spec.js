@@ -312,55 +312,33 @@ describe("TabBarView", () => {
       expect(tabBar.tabAtIndex(1).element.style.maxWidth).toBe("");
     }));
 
-  describe("dragging a tab outside the primary surface", () => {
-    const bounds = { left: 100, right: 500, top: 100, bottom: 400 };
-
-    function dragEnd(x, y) {
-      return {
-        type: "dragend",
-        clientX: x,
-        clientY: y,
-        screenX: x,
-        screenY: y,
-        dataTransfer: { dropEffect: "none" },
-      };
-    }
-
+  describe("when a tab drag ends", () => {
     beforeEach(() => {
-      spyOn(lumine.workspace.getElement(), "getBoundingClientRect").and.returnValue(bounds);
       tabBar.draggedTab = tabBar.tabForItem(item1);
       tabBar.dragToken = "drag-token";
-      tabBar.dragOutTracker.start();
-      tabBar.dragOutTracker.update(dragEnd(540, 200), bounds);
       spyOn(tabTransferService, "release");
+      spyOn(tabTransferService, "finishSession");
       spyOn(lumine.workspace, "detachPaneItem").and.resolveTo();
     });
 
-    it("detaches the same item only after an unclaimed drag-out", async () => {
-      tabBar.onDragEnd(dragEnd(540, 200));
-      await Promise.resolve();
-
-      expect(lumine.workspace.detachPaneItem).toHaveBeenCalledOnceWith(item1, {
-        bounds: { x: 420, y: 185 },
-      });
-      expect(tabTransferService.release).toHaveBeenCalledOnceWith(
-        "drag-token",
-        "tab detached by drag-out",
-      );
-    });
-
-    it("rolls an Escape-cancelled drag back without moving the item", async () => {
-      tabBar.dragOutTracker.cancel();
-
-      tabBar.onDragEnd(dragEnd(540, 200));
-      await Promise.resolve();
+    it("cancels an unaccepted drag without detaching the item", () => {
+      tabBar.onDragEnd({ dataTransfer: { dropEffect: "none" } });
 
       expect(lumine.workspace.detachPaneItem).not.toHaveBeenCalled();
       expect(tabTransferService.release).toHaveBeenCalledOnceWith(
         "drag-token",
         "tab drag cancelled",
       );
+      expect(tabTransferService.finishSession).not.toHaveBeenCalled();
       expect(pane.getItems()).toContain(item1);
+    });
+
+    it("leaves an accepted drop session available for its target to commit", () => {
+      tabBar.onDragEnd({ dataTransfer: { dropEffect: "move" } });
+
+      expect(lumine.workspace.detachPaneItem).not.toHaveBeenCalled();
+      expect(tabTransferService.release).not.toHaveBeenCalled();
+      expect(tabTransferService.finishSession).toHaveBeenCalledOnceWith("drag-token");
     });
   });
 
