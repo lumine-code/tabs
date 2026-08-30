@@ -1040,30 +1040,16 @@ describe("TabBarView", () => {
         );
       }));
 
-    describe("when tabs:detach-tab is fired", () => {
-      describe("by right-clicking on a tab", () => {
-        beforeEach(() => {
-          triggerClickEvent(tabBar.tabForItem(item1).element, { button: 2 });
-          expect(lumine.workspace.getCenter().getTiledPanes().length).toBe(1);
-          spyOn(lumine.workspace, "detachPaneItem").and.resolveTo();
-        });
+    it("hands the context-menu tab to core's detach command", async () => {
+      const tab = tabBar.tabForItem(item1);
+      jasmine.attachToDOM(lumine.workspace.getElement());
+      spyOn(lumine.workspace, "detachPaneItem").and.resolveTo();
 
-        it("hands the exact item to the workspace without closing or recreating it", async () => {
-          await lumine.commands.dispatch(tabBar.element, "tabs:detach-tab");
+      await lumine.commands.dispatch(tab.element, "pane:detach-item");
 
-          expect(lumine.workspace.detachPaneItem).toHaveBeenCalledOnceWith(item1);
-          expect(pane.getItems()).toContain(item1);
-          expect(tabBar.tabForItem(item1)).not.toBeNull();
-        });
-      });
-
-      it("detaches the active item from the pane command", async () => {
-        spyOn(lumine.workspace, "detachPaneItem").and.resolveTo();
-
-        await lumine.commands.dispatch(pane.getElement(), "tabs:detach-tab");
-
-        expect(lumine.workspace.detachPaneItem).toHaveBeenCalledOnceWith(pane.getActiveItem());
-      });
+      expect(lumine.workspace.detachPaneItem).toHaveBeenCalledOnceWith(item1);
+      expect(pane.getItems()).toContain(item1);
+      expect(tabBar.tabForItem(item1)).toBe(tab);
     });
   });
 
