@@ -1,5 +1,5 @@
 const path = require("path");
-const { Disposable } = require("lumine");
+const { Disposable, Emitter, Icon } = require("lumine");
 
 describe("tab icons", () => {
   let tab;
@@ -37,7 +37,7 @@ describe("tab icons", () => {
   });
 
   it("takes an icon from a provider, and gives it back", () => {
-    const disposable = provide(() => "foo bar");
+    const disposable = provide(() => Icon.classes(["foo", "bar"]));
     expect(tab.itemTitle.className).toBe("title icon foo bar");
 
     disposable.dispose();
@@ -50,15 +50,15 @@ describe("tab icons", () => {
     expect(tab.itemTitle.classList.contains("icon-file-text")).toBe(true);
   });
 
-  it("accepts an array of classes", () => {
-    provide(() => ["foo", "bar"]);
+  it("accepts a class descriptor", () => {
+    provide(() => Icon.classes(["foo", "bar"]));
     expect(tab.itemTitle.className).toBe("title icon foo bar");
   });
 
   it("repaints when a provider reports its answers changed", () => {
     let notify;
     let classes = "first";
-    const disposable = provide(() => classes, {
+    const disposable = provide(() => Icon.classes([classes]), {
       onDidChange(callback) {
         notify = callback;
         return new Disposable(() => (notify = null));
@@ -77,7 +77,7 @@ describe("tab icons", () => {
   // No provider stylesheet, no !important, no per-extension generated rules:
   // the data URL rides on the element itself.
   it("renders an image icon", () => {
-    provide(() => ({ render: "image", source: "data:image/png;base64,AAAA" }));
+    provide(() => Icon.image("data:image/png;base64,AAAA"));
     expect(tab.itemTitle.classList.contains("icon-image")).toBe(true);
     expect(tab.itemTitle.style.getPropertyValue("--icon-image")).toBe(
       'url("data:image/png;base64,AAAA")',
@@ -107,8 +107,55 @@ describe("tab icons", () => {
     // `getIconName()` is a target like any other now, so a provider can restyle
     // it — it is no longer a hard short circuit ahead of the chain.
     it("can still be overridden by a provider", () => {
-      provide((target) => (target.type === "name" ? "named" : null));
+      provide((target) => (target.type === "name" ? Icon.classes(["named"]) : null));
       expect(namedTab.itemTitle.classList.contains("named")).toBe(true);
     });
+  });
+
+  it("follows an item's icon changes through the live registry binding", () => {
+    const emitter = new Emitter();
+    let iconName = "tools";
+    const item = {
+      element: document.createElement("div"),
+      getElement() {
+        return this.element;
+      },
+      getTitle: () => "Dynamic icon",
+      getIconName: () => iconName,
+      onDidChangeIcon: (callback) => emitter.on("icon", callback),
+    };
+    const dynamicTab = addItem(item);
+    expect(dynamicTab.itemTitle.classList.contains("icon-tools")).toBe(true);
+
+    iconName = "flame";
+    emitter.emit("icon");
+    expect(dynamicTab.itemTitle.classList.contains("icon-flame")).toBe(true);
+    expect(dynamicTab.itemTitle.classList.contains("icon-tools")).toBe(false);
+  });
+
+  it("follows an item's path changes without a manual icon refresh", () => {
+    const emitter = new Emitter();
+    let filePath = path.join(__dirname, "fixtures", "sample.js");
+    provide((target) => {
+      if (target.type !== "path") return null;
+      return Icon.classes([target.path.endsWith(".js") ? "path-js" : "path-md"]);
+    });
+    const item = {
+      element: document.createElement("div"),
+      getElement() {
+        return this.element;
+      },
+      getTitle: () => "Dynamic path",
+      getPath: () => filePath,
+      onDidChangePath: (callback) => emitter.on("path", callback),
+    };
+    const dynamicTab = addItem(item);
+    expect(dynamicTab.itemTitle.classList.contains("path-js")).toBe(true);
+
+    filePath = path.join(__dirname, "fixtures", "sample.md");
+    emitter.emit("path", filePath);
+    expect(dynamicTab.itemTitle.classList.contains("path-md")).toBe(true);
+    expect(dynamicTab.itemTitle.classList.contains("path-js")).toBe(false);
+    expect(dynamicTab.itemTitle.dataset.path).toBe(filePath);
   });
 });

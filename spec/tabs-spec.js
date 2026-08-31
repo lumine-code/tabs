@@ -363,20 +363,17 @@ describe("TabBarView", () => {
       const badItem = new BadView("Item 3");
       pane.addItem(badItem);
 
-      expect(warnings[0].message).toContain("onDidChangeTitle");
-      expect(warnings[0].object).toBe(badItem);
-
-      expect(warnings[1].message).toContain("onDidChangePath");
-      expect(warnings[1].object).toBe(badItem);
-
-      expect(warnings[2].message).toContain("onDidChangeIcon");
-      expect(warnings[2].object).toBe(badItem);
-
-      expect(warnings[3].message).toContain("onDidChangeFileState");
-      expect(warnings[3].object).toBe(badItem);
-
-      expect(warnings[4].message).toContain("onDidSave");
-      expect(warnings[4].object).toBe(badItem);
+      const messages = warnings.map(({ message }) => message);
+      expect(messages).toEqual(
+        jasmine.arrayContaining([
+          jasmine.stringContaining("onDidChangeTitle"),
+          jasmine.stringContaining("onDidChangePath"),
+          jasmine.stringContaining("onDidChangeIcon"),
+          jasmine.stringContaining("onDidChangeFileState"),
+          jasmine.stringContaining("onDidSave"),
+        ]),
+      );
+      expect(warnings.every(({ object }) => object === badItem)).toBe(true);
     });
   });
 
@@ -691,11 +688,11 @@ describe("TabBarView", () => {
       );
     });
 
-    it("hides the icon from the tab if the icon is removed", () => {
+    it("falls back to the item's path if its named icon is removed", () => {
       item1.getIconName = null;
       item1.emitIconChanged();
-      expect(tabBar.element.querySelectorAll(".tab")[0].querySelector(".title")).not.toHaveClass(
-        "icon",
+      expect(tabBar.element.querySelectorAll(".tab")[0].querySelector(".title")).toHaveClass(
+        "icon-file-text",
       );
       expect(tabBar.element.querySelectorAll(".tab")[0].querySelector(".title")).not.toHaveClass(
         "icon-squirrel",
