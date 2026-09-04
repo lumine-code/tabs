@@ -1430,34 +1430,17 @@ describe("TabBarView", () => {
 
       // Mock the repository
       repository = jasmine.createSpyObj("repo", ["isPathIgnoredCached", "getPathStatusSummary"]);
-      repository.onDidChangeStatusSnapshot = function () {
-        return { dispose() {} };
-      };
-
-      repository.onDidChangeStatus = function (callback) {
-        if (this.changeStatusCallbacks == null) {
-          this.changeStatusCallbacks = [];
+      repository.onDidChangeStatusSnapshot = function (callback) {
+        if (this.changeStatusSnapshotCallbacks == null) {
+          this.changeStatusSnapshotCallbacks = [];
         }
-        this.changeStatusCallbacks.push(callback);
-        return { dispose: () => _.remove(this.changeStatusCallbacks, callback) };
+        this.changeStatusSnapshotCallbacks.push(callback);
+        return { dispose: () => _.remove(this.changeStatusSnapshotCallbacks, callback) };
       };
-      repository.emitDidChangeStatus = function (event) {
-        return Array.from(this.changeStatusCallbacks != null ? this.changeStatusCallbacks : []).map(
-          (callback) => callback(event),
-        );
-      };
-
-      repository.onDidChangeStatuses = function (callback) {
-        if (this.changeStatusesCallbacks == null) {
-          this.changeStatusesCallbacks = [];
-        }
-        this.changeStatusesCallbacks.push(callback);
-        return { dispose: () => _.remove(this.changeStatusesCallbacks, callback) };
-      };
-      repository.emitDidChangeStatuses = function (event) {
+      repository.emitDidChangeStatusSnapshot = function (snapshot = {}) {
         return Array.from(
-          this.changeStatusesCallbacks != null ? this.changeStatusesCallbacks : [],
-        ).map((callback) => callback(event));
+          this.changeStatusSnapshotCallbacks != null ? this.changeStatusSnapshotCallbacks : [],
+        ).map((callback) => callback(snapshot));
       };
 
       // Mock the repository registry to pretend we are working within a repository.
@@ -1471,8 +1454,8 @@ describe("TabBarView", () => {
 
       await conditionPromise(
         () =>
-          (repository.changeStatusCallbacks != null
-            ? repository.changeStatusCallbacks.length
+          (repository.changeStatusSnapshotCallbacks != null
+            ? repository.changeStatusSnapshotCallbacks.length
             : undefined) > 0,
       );
     });
@@ -1541,7 +1524,7 @@ describe("TabBarView", () => {
     describe("when changes in item statuses are notified", () => {
       it("updates status for items in the repository", () => {
         tab.updateVcsStatus.calls.reset();
-        repository.emitDidChangeStatuses();
+        repository.emitDidChangeStatusSnapshot();
         expect(tab.updateVcsStatus.calls.count()).toEqual(1);
       });
 
@@ -1555,7 +1538,7 @@ describe("TabBarView", () => {
           modified: true,
           added: false,
         });
-        repository.emitDidChangeStatus({ path: tab.path });
+        repository.emitDidChangeStatusSnapshot();
         expect(tabBar.element.querySelectorAll(".tab")[1].querySelector(".title")).toHaveClass(
           "status-modified",
         );
@@ -1563,7 +1546,7 @@ describe("TabBarView", () => {
 
       it("does not update status for items not in the repository", () => {
         tab1.updateVcsStatus.calls.reset();
-        repository.emitDidChangeStatuses();
+        repository.emitDidChangeStatusSnapshot();
         expect(tab1.updateVcsStatus.calls.count()).toEqual(0);
       });
     });
