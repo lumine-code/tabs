@@ -1458,6 +1458,7 @@ describe("TabBarView", () => {
             ? repository.changeStatusSnapshotCallbacks.length
             : undefined) > 0,
       );
+      await conditionPromise(() => tab.updateVcsStatus.calls.count() > 0);
     });
 
     describe("when working inside a VCS repository", () => {
@@ -1522,13 +1523,15 @@ describe("TabBarView", () => {
     });
 
     describe("when changes in item statuses are notified", () => {
-      it("updates status for items in the repository", () => {
+      it("updates status for items in the repository without synchronous fan-out", async () => {
         tab.updateVcsStatus.calls.reset();
         repository.emitDidChangeStatusSnapshot();
+        expect(tab.updateVcsStatus.calls.count()).toEqual(0);
+        await conditionPromise(() => tab.updateVcsStatus.calls.count() > 0);
         expect(tab.updateVcsStatus.calls.count()).toEqual(1);
       });
 
-      it("updates the status of an item if it has changed", () => {
+      it("updates the status of an item if it has changed", async () => {
         expect(tabBar.element.querySelectorAll(".tab")[1].querySelector(".title")).not.toHaveClass(
           "status-modified",
         );
@@ -1538,7 +1541,9 @@ describe("TabBarView", () => {
           modified: true,
           added: false,
         });
+        const updateCount = tab.updateVcsStatus.calls.count();
         repository.emitDidChangeStatusSnapshot();
+        await conditionPromise(() => tab.updateVcsStatus.calls.count() > updateCount);
         expect(tabBar.element.querySelectorAll(".tab")[1].querySelector(".title")).toHaveClass(
           "status-modified",
         );
