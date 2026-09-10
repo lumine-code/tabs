@@ -59,7 +59,7 @@ describe("TabTransferService", () => {
       sourceWindowId: 9,
       targetWindowId: 11,
     });
-    expect(pane.destroyItem).toHaveBeenCalledOnceWith(item);
+    expect(pane.destroyItem).toHaveBeenCalledOnceWith(item, true);
   });
 
   it("destroys the exact item even when its pane order changed before commit", async () => {
@@ -68,7 +68,7 @@ describe("TabTransferService", () => {
 
     await workspaceDrops.commit(token, {});
 
-    expect(pane.destroyItem).toHaveBeenCalledOnceWith(item);
+    expect(pane.destroyItem).toHaveBeenCalledOnceWith(item, true);
     expect(pane.getItems().map(({ name }) => name)).toEqual(["after", "before"]);
   });
 

@@ -61,6 +61,61 @@ describe("Tabs workspace drag-and-drop integration", () => {
     expect(pane.getActiveItem()).toBe(firstItem);
   });
 
+  it("writes the text editor selections and scroll position into the transfer", () => {
+    firstItem.setText("first line\nsecond line\nthird line");
+    firstItem.setSelectedBufferRange(
+      [
+        [0, 1],
+        [0, 5],
+      ],
+      { reversed: true },
+    );
+    firstItem.addSelectionForBufferRange([
+      [2, 3],
+      [2, 3],
+    ]);
+    spyOn(firstItem, "getScrollTopRow").and.returnValue(12);
+    spyOn(firstItem, "getScrollLeftColumn").and.returnValue(7);
+    spyOn(firstItem.getElement().component, "captureScrollAnchor").and.returnValue({
+      type: "row",
+      bufferPosition: [2, 3],
+      offset: -4.5,
+    });
+
+    const source = tabForItem(firstItem);
+    const [dragStart] = buildDragEvents(source, source);
+    source.dispatchEvent(dragStart);
+    const descriptor = lumine.workspaceDrops.read(dragStart.dataTransfer);
+
+    expect(descriptor.items[0].textEditorState).toEqual(
+      jasmine.objectContaining({
+        selections: [
+          {
+            range: [
+              [0, 1],
+              [0, 5],
+            ],
+            reversed: true,
+          },
+          {
+            range: [
+              [2, 3],
+              [2, 3],
+            ],
+            reversed: false,
+          },
+        ],
+        scrollTopRow: 12,
+        scrollLeftColumn: 7,
+        scrollAnchor: {
+          type: "row",
+          bufferPosition: [2, 3],
+          offset: -4.5,
+        },
+      }),
+    );
+  });
+
   it("moves a tab into the split selected by the core pane target", async () => {
     const source = tabForItem(firstItem);
     const itemViews = paneElement.querySelector(":scope > .item-views");

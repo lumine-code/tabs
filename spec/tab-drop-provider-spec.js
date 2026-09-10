@@ -201,8 +201,39 @@ describe("TabDropProvider", () => {
     expect(sourcePane.moveItemToPane).not.toHaveBeenCalled();
   });
 
-  it("opens a remote item in the resolved pane, restores text, focuses and then commits", async () => {
-    const remoteItem = { setText: jasmine.createSpy("setText") };
+  it("opens a remote item, restores its editor state, commits and then focuses", async () => {
+    const order = [];
+    const textEditorState = {
+      selections: [
+        {
+          range: [
+            [1, 2],
+            [3, 4],
+          ],
+          reversed: true,
+        },
+        {
+          range: [
+            [5, 6],
+            [5, 6],
+          ],
+          reversed: false,
+        },
+      ],
+      scrollTopRow: 9,
+      scrollLeftColumn: 3,
+      scrollAnchor: {
+        type: "row",
+        bufferPosition: [2, 1],
+        offset: -4.5,
+      },
+    };
+    const remoteItem = {
+      setText: jasmine.createSpy("setText"),
+      restoreViewState: jasmine
+        .createSpy("restoreViewState")
+        .and.callFake(() => order.push("restore view state")),
+    };
     const openedPane = createPane(30, [remoteItem]);
     workspace.open.and.resolveTo(remoteItem);
     workspace.paneForItem.and.callFake((candidate) =>
@@ -210,11 +241,17 @@ describe("TabDropProvider", () => {
     );
     const payload = descriptor({
       source: { windowId: 8, paneId: 11, onlyItem: true },
-      items: [{ type: "pane-item", uri: "", modifiedText: "unsaved text" }],
+      items: [
+        {
+          type: "pane-item",
+          uri: "",
+          modifiedText: "unsaved text",
+          textEditorState,
+        },
+      ],
     });
     const prepared = provider.prepareDrop({ descriptor: payload, pane: targetPane });
     const dropContext = context(targetPane, 1);
-    const order = [];
     targetPane.activate.and.callFake(() => order.push("activate"));
     windowService.focus.and.callFake(async () => order.push("focus"));
     tabTransferService.commitRemote.and.callFake(async () => {
@@ -233,8 +270,102 @@ describe("TabDropProvider", () => {
     expect(openedPane.moveItemToPane).toHaveBeenCalledOnceWith(remoteItem, targetPane, 1);
     expect(remoteItem.setText).toHaveBeenCalledOnceWith("unsaved text");
     expect(targetPane.activateItem).toHaveBeenCalledOnceWith(remoteItem);
-    expect(order).toEqual(["activate", "commit", "focus"]);
+    expect(remoteItem.restoreViewState).toHaveBeenCalledOnceWith(textEditorState);
+    expect(order).toEqual(["restore view state", "commit", "activate", "focus"]);
     expect(tabTransferService.commitRemote).toHaveBeenCalledOnceWith(8, "transfer-token");
+    expect(result).toEqual({ pane: targetPane, item: remoteItem });
+  });
+
+  it("restores an existing target editor when the source rejects the move", async () => {
+    let text = "target text";
+    const targetItem = targetPane.items[0];
+    const originalTextEditorState = {
+      selections: [
+        {
+          range: [
+            [4, 2],
+            [4, 5],
+          ],
+          reversed: true,
+        },
+      ],
+      scrollTopRow: 6,
+      scrollLeftColumn: 2,
+    };
+    const transferredTextEditorState = {
+      selections: [
+        {
+          range: [
+            [8, 1],
+            [8, 1],
+          ],
+          reversed: false,
+        },
+      ],
+      scrollTopRow: 10,
+      scrollLeftColumn: 7,
+    };
+    const existingItem = {
+      getText: () => text,
+      setText: jasmine.createSpy("setText").and.callFake((value) => (text = value)),
+      serializeViewState: () => originalTextEditorState,
+      restoreViewState: jasmine.createSpy("restoreViewState"),
+    };
+    targetPane.items.push(existingItem);
+    workspace.open.and.resolveTo(existingItem);
+    workspace.paneForItem.and.callFake((candidate) =>
+      targetPane.items.includes(candidate) ? targetPane : null,
+    );
+    tabTransferService.commitRemote.and.resolveTo(false);
+    const payload = descriptor({
+      source: { windowId: 8, paneId: 11, onlyItem: false },
+      items: [
+        {
+          type: "pane-item",
+          uri: "remote.txt",
+          modifiedText: "source text",
+          textEditorState: transferredTextEditorState,
+        },
+      ],
+    });
+    const prepared = provider.prepareDrop({ descriptor: payload, pane: targetPane });
+
+    await expectAsync(provider.perform(context(targetPane, 0), prepared)).toBeRejectedWithError(
+      "The source window rejected the tab transfer",
+    );
+
+    expect(existingItem.setText.calls.allArgs()).toEqual([["source text"], ["target text"]]);
+    expect(existingItem.restoreViewState.calls.allArgs()).toEqual([
+      [transferredTextEditorState],
+      [originalTextEditorState],
+    ]);
+    expect(targetPane.items).toEqual([targetItem, existingItem]);
+    expect(targetPane.getActiveItem()).toBe(targetItem);
+  });
+
+  it("retains a committed remote item when target activation fails", async () => {
+    const remoteItem = { setText: jasmine.createSpy("setText") };
+    const openedPane = createPane(30, [remoteItem]);
+    workspace.open.and.resolveTo(remoteItem);
+    workspace.paneForItem.and.callFake((candidate) => {
+      if (openedPane.items.includes(candidate)) return openedPane;
+      if (targetPane.items.includes(candidate)) return targetPane;
+      return null;
+    });
+    targetPane.activateItem.and.throwError("activation failed");
+    spyOn(console, "error");
+    const payload = descriptor({
+      source: { windowId: 8, paneId: 11, onlyItem: false },
+      items: [{ type: "pane-item", uri: "remote.txt", modifiedText: "remote text" }],
+    });
+    const prepared = provider.prepareDrop({ descriptor: payload, pane: targetPane });
+
+    const result = await provider.perform(context(targetPane, 1), prepared);
+
+    expect(tabTransferService.commitRemote).toHaveBeenCalledOnceWith(8, "transfer-token");
+    expect(targetPane.destroyItem).not.toHaveBeenCalled();
+    expect(targetPane.items).toContain(remoteItem);
+    expect(console.error.calls.mostRecent().args[0].message).toBe("activation failed");
     expect(result).toEqual({ pane: targetPane, item: remoteItem });
   });
 
@@ -261,6 +392,7 @@ describe("TabDropProvider", () => {
 
     expect(targetPane.destroyItem).toHaveBeenCalledOnceWith(remoteItem, true);
     expect(targetPane.items).not.toContain(remoteItem);
+    expect(targetPane.activateItem).not.toHaveBeenCalled();
     expect(windowService.focus).not.toHaveBeenCalled();
   });
 
