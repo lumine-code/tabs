@@ -116,6 +116,48 @@ describe("Tabs workspace drag-and-drop integration", () => {
     );
   });
 
+  it("advertises only the default location when an item has no allowed-locations hook", async () => {
+    const item = document.createElement("div");
+    item.getTitle = () => "Implicit location";
+    item.getDefaultLocation = () => "right";
+    await lumine.workspace.open(item);
+    const itemPane = lumine.workspace.paneForItem(item);
+    const findTab = () =>
+      Array.from(itemPane.getElement().querySelectorAll(":scope > .tab-bar > .tab")).find(
+        (candidate) => candidate.item === item,
+      );
+    await conditionPromise(findTab, "the implicit-location tab to render");
+    const tab = findTab();
+    const [dragStart] = buildDragEvents(tab, tab);
+
+    tab.dispatchEvent(dragStart);
+
+    expect(lumine.workspaceDrops.read(dragStart.dataTransfer).allowedLocations).toEqual(["right"]);
+  });
+
+  it("preserves an item's explicit allowed locations in the transfer", async () => {
+    const item = document.createElement("div");
+    item.getTitle = () => "Explicit locations";
+    item.getDefaultLocation = () => "right";
+    item.getAllowedLocations = () => ["right", "left"];
+    await lumine.workspace.open(item);
+    const itemPane = lumine.workspace.paneForItem(item);
+    const findTab = () =>
+      Array.from(itemPane.getElement().querySelectorAll(":scope > .tab-bar > .tab")).find(
+        (candidate) => candidate.item === item,
+      );
+    await conditionPromise(findTab, "the explicit-locations tab to render");
+    const tab = findTab();
+    const [dragStart] = buildDragEvents(tab, tab);
+
+    tab.dispatchEvent(dragStart);
+
+    expect(lumine.workspaceDrops.read(dragStart.dataTransfer).allowedLocations).toEqual([
+      "right",
+      "left",
+    ]);
+  });
+
   it("moves a tab into the split selected by the core pane target", async () => {
     const source = tabForItem(firstItem);
     const itemViews = paneElement.querySelector(":scope > .item-views");
