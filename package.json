@@ -24,9 +24,6 @@
   "engines": {
     "lumine": "^1.0.0"
   },
-  "backgroundTips": [
-    "{% if keys['tabs:close-other-tabs'] %}You can close every tab but the active one with {{ 'tabs:close-other-tabs' | keystroke }}{% else %}You can close every tab but the active one from the tab's context menu.{% endif %}"
-  ],
   "scripts": {
     "test": "lumine --test spec",
     "lint": "eslint . --max-warnings 0",
@@ -71,6 +68,13 @@
       "description": "Add new tabs at the end of the tab bar, rather than after active tab.",
       "type": "boolean",
       "default": false
+    }
+  },
+  "providedServices": {
+    "background-tips.provider": {
+      "versions": {
+        "1.0.0": "provideBackgroundTips"
+      }
     }
   },
   "dependencies": {
