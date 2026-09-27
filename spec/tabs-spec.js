@@ -7,6 +7,8 @@ const main = require("../lib/main");
 let {
   triggerMouseEvent,
   triggerClickEvent,
+  buildDragEvents,
+  buildDragEvent,
   buildWheelEvent,
   buildWheelPlusShiftEvent,
 } = require("./event-helpers.js");
@@ -300,6 +302,20 @@ describe("TabBarView", () => {
       expect(tabBar.tabAtIndex(1).element.style.maxWidth).toBe("");
     }));
 
+  describe("when a tab drag ends without leaving the bar", () =>
+    it("resets the width on every tab", () => {
+      jasmine.attachToDOM(tabBar.element);
+      const dragged = tabBar.tabAtIndex(0).element;
+      const [dragStartEvent] = buildDragEvents(dragged, tabBar.element);
+
+      triggerMouseEvent("mouseenter", tabBar.element);
+      dragged.dispatchEvent(dragStartEvent);
+      dragged.dispatchEvent(buildDragEvent("dragend", dragged, dragStartEvent.dataTransfer));
+
+      expect(tabBar.tabAtIndex(0).element.style.maxWidth).toBe("");
+      expect(tabBar.tabAtIndex(1).element.style.maxWidth).toBe("");
+    }));
+
   describe(".initialize(pane)", () => {
     it("creates a tab for each item on the tab bar's parent pane", () => {
       expect(pane.getItems().length).toBe(3);
@@ -432,6 +448,20 @@ describe("TabBarView", () => {
       pane.destroyItem(item2);
       expect(tabBar.getTabs().length).toBe(2);
       expect(tabBar.element.textContent).not.toMatch("Item 2");
+    });
+
+    it("releases the remaining widths when the dragged tab moves to another pane", () => {
+      jasmine.attachToDOM(tabBar.element);
+      const movedTab = tabBar.tabForItem(item1).element;
+      const [dragStartEvent] = buildDragEvents(movedTab, tabBar.element);
+      const targetPane = pane.splitRight();
+
+      triggerMouseEvent("mouseenter", tabBar.element);
+      movedTab.dispatchEvent(dragStartEvent);
+      pane.moveItemToPane(item1, targetPane, 0);
+
+      expect(tabBar.tabAtIndex(0).element.style.maxWidth).toBe("");
+      expect(tabBar.tabAtIndex(1).element.style.maxWidth).toBe("");
     });
 
     it("updates the titles of the remaining tabs", () => {
@@ -1118,6 +1148,17 @@ describe("TabBarView", () => {
     }));
 
   describe("when the tab bar is right-clicked", () => {
+    it("releases widths that a native context menu could otherwise strand", () => {
+      jasmine.attachToDOM(tabBar.element);
+      triggerMouseEvent("mouseenter", tabBar.element);
+      expect(tabBar.tabAtIndex(0).element.style.maxWidth).not.toBe("");
+
+      triggerClickEvent(tabBar.tabAtIndex(0).element, { button: 2 });
+
+      expect(tabBar.tabAtIndex(0).element.style.maxWidth).toBe("");
+      expect(tabBar.tabAtIndex(1).element.style.maxWidth).toBe("");
+    });
+
     it("adds the right-clicked class when right-clicked", () => {
       triggerClickEvent(tabBar.tabAtIndex(0).element, { button: 2 });
       expect(tabBar.tabAtIndex(0).element.classList.contains("right-clicked")).toBe(true);
