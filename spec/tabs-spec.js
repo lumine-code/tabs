@@ -1470,7 +1470,14 @@ describe("TabBarView", () => {
       spyOn(tab1, "updateVcsStatus").and.callThrough();
 
       // Mock the repository
-      repository = jasmine.createSpyObj("repo", ["isPathIgnoredCached", "getPathStatusSummary"]);
+      repository = jasmine.createSpyObj("repo", [
+        "isPathIgnoredCached",
+        "getPathStatusSummary",
+        "getStatusSnapshot",
+        "ensureStatusSnapshot",
+      ]);
+      repository.getStatusSnapshot.and.returnValue({ initialized: true });
+      repository.ensureStatusSnapshot.and.resolveTo({ initialized: true });
       repository.onDidChangeStatusSnapshot = function (callback) {
         if (this.changeStatusSnapshotCallbacks == null) {
           this.changeStatusSnapshotCallbacks = [];
@@ -1485,6 +1492,9 @@ describe("TabBarView", () => {
       };
 
       // Mock the repository registry to pretend we are working within a repository.
+      spyOn(lumine.repositories, "getForPath").and.callFake((filePath) =>
+        filePath === tab1.path ? null : repository,
+      );
       spyOn(lumine.repositories, "resolveForPath").and.callFake((filePath) =>
         Promise.resolve(filePath === tab1.path ? null : repository),
       );
@@ -1499,10 +1509,131 @@ describe("TabBarView", () => {
             ? repository.changeStatusSnapshotCallbacks.length
             : undefined) > 0,
       );
-      await conditionPromise(() => tab.updateVcsStatus.calls.count() > 0);
+      await conditionPromise(() => tab.updateVcsStatus.calls.count() > 1);
+    });
+
+    afterEach(() => {
+      // The outer suite resets the project before Jasmine removes spies. Its
+      // repository registry must see real repositories during that teardown.
+      lumine.repositories.getForPath.and.callThrough();
+      lumine.repositories.resolveForPath.and.callThrough();
     });
 
     describe("when working inside a VCS repository", () => {
+      it("colors an ignored tab before inserting it into the tab bar", () => {
+        repository.isPathIgnoredCached.and.returnValue(true);
+        const item = new TestView("Ignored Item");
+        item.getPath = () => path.join(lumine.project.getPaths()[0], "ignored.txt");
+        const originalInsert = tabBar.insertTabAtIndex.bind(tabBar);
+        spyOn(tabBar, "insertTabAtIndex").and.callFake((newTab, index) => {
+          expect(newTab.element.isConnected).toBe(false);
+          expect(newTab.itemTitle).toHaveClass("status-ignored");
+          expect(newTab.element).not.toHaveClass("vcs-status-pending");
+          return originalInsert(newTab, index);
+        });
+
+        pane.addItem(item);
+
+        expect(tabBar.insertTabAtIndex).toHaveBeenCalled();
+        expect(repository.ensureStatusSnapshot).not.toHaveBeenCalled();
+      });
+
+      it("reveals the title with its color after repository discovery and the first snapshot", async () => {
+        const tabsPackage = await lumine.packages.loadPackage("tabs");
+        tabsPackage.activateStylesheets();
+        jasmine.attachToDOM(tabBar.element);
+        lumine.repositories.getForPath.and.returnValue(null);
+        repository.getStatusSnapshot.and.returnValue({ initialized: false });
+        let resolveRepository, resolveSnapshot;
+        lumine.repositories.resolveForPath.and.returnValue(
+          new Promise((resolve) => (resolveRepository = resolve)),
+        );
+        repository.ensureStatusSnapshot.and.returnValue(
+          new Promise((resolve) => (resolveSnapshot = resolve)),
+        );
+        const setup = tab.setupVcsStatus();
+        expect(tab.element).toHaveClass("vcs-status-pending");
+        expect(getComputedStyle(tab.itemTitle).visibility).toBe("hidden");
+        expect(tab.itemTitle.offsetWidth).toBeGreaterThan(0);
+
+        resolveRepository(repository);
+        await flushMicrotasks();
+        expect(repository.ensureStatusSnapshot).toHaveBeenCalled();
+        expect(tab.element).toHaveClass("vcs-status-pending");
+
+        repository.isPathIgnoredCached.and.returnValue(true);
+        repository.getStatusSnapshot.and.returnValue({ initialized: true });
+        resolveSnapshot();
+        await setup;
+
+        expect(tab.itemTitle).toHaveClass("status-ignored");
+        expect(tab.element).not.toHaveClass("vcs-status-pending");
+        expect(getComputedStyle(tab.itemTitle).visibility).toBe("visible");
+      });
+
+      it("reveals an ordinary title when discovery finds no repository", async () => {
+        lumine.repositories.getForPath.and.returnValue(null);
+        lumine.repositories.resolveForPath.and.resolveTo(null);
+
+        await tab.setupVcsStatus();
+
+        expect(tab.element).not.toHaveClass("vcs-status-pending");
+        expect(tab.itemTitle).not.toHaveClass("status-ignored");
+      });
+
+      it("reveals the title if the first snapshot fails", async () => {
+        repository.getStatusSnapshot.and.returnValue({ initialized: false });
+        const error = new Error("Git unavailable");
+        repository.ensureStatusSnapshot.and.rejectWith(error);
+        spyOn(console, "error");
+
+        await tab.setupVcsStatus();
+
+        expect(tab.element).not.toHaveClass("vcs-status-pending");
+        expect(console.error).toHaveBeenCalledWith("Unable to load tab Git status", error);
+
+        repository.getStatusSnapshot.and.returnValue({ initialized: true });
+        repository.isPathIgnoredCached.and.returnValue(true);
+        repository.emitDidChangeStatusSnapshot();
+        await conditionPromise(() => tab.itemTitle.classList.contains("status-ignored"));
+      });
+
+      it("discards an old snapshot when the item's path changes", async () => {
+        repository.getStatusSnapshot.and.returnValue({ initialized: false });
+        let resolveSnapshot;
+        repository.ensureStatusSnapshot.and.returnValue(
+          new Promise((resolve) => (resolveSnapshot = resolve)),
+        );
+        const oldSetup = tab.setupVcsStatus();
+        await flushMicrotasks();
+        tab.path = tab1.path;
+        await tab.setupVcsStatus();
+
+        repository.isPathIgnoredCached.and.returnValue(true);
+        resolveSnapshot();
+        await oldSetup;
+
+        expect(tab.itemTitle).not.toHaveClass("status-ignored");
+        expect(tab.element).not.toHaveClass("vcs-status-pending");
+        expect(tab.repoSubscriptions).toBeNull();
+      });
+
+      it("discards repository discovery after the tab is destroyed", async () => {
+        lumine.repositories.getForPath.and.returnValue(null);
+        let resolveRepository;
+        lumine.repositories.resolveForPath.and.returnValue(
+          new Promise((resolve) => (resolveRepository = resolve)),
+        );
+        const setup = tab.setupVcsStatus();
+        tab.destroy();
+
+        resolveRepository(repository);
+        await setup;
+
+        expect(repository.ensureStatusSnapshot).not.toHaveBeenCalled();
+        expect(tab.repoSubscriptions).toBeNull();
+      });
+
       it("adds custom style for new items", () => {
         repository.getPathStatusSummary.and.returnValue({
           source: "cache",
