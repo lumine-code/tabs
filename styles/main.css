@@ -26,10 +26,6 @@
       }
     }
 
-    &.vcs-status-pending .title {
-      visibility: hidden;
-    }
-
     .title {
       overflow: hidden;
       white-space: pre;

@@ -1,4 +1,5 @@
 const _ = require("@lumine-code/underscore-plus");
+const fs = require("fs");
 const path = require("path");
 const temp = require("@lumine-code/temp");
 const TabBarView = require("../lib/tab-bar-view");
@@ -1538,7 +1539,6 @@ describe("TabBarView", () => {
         spyOn(tabBar, "insertTabAtIndex").and.callFake((newTab, index) => {
           expect(newTab.element.isConnected).toBe(false);
           expect(newTab.itemTitle).toHaveClass("status-ignored");
-          expect(newTab.element).not.toHaveClass("vcs-status-pending");
           return originalInsert(newTab, index);
         });
 
@@ -1548,7 +1548,7 @@ describe("TabBarView", () => {
         expect(repository.ensureStatusSnapshot).not.toHaveBeenCalled();
       });
 
-      it("reveals the title with its color after repository discovery and the first snapshot", async () => {
+      it("keeps the title visible while discovering its repository and first snapshot", async () => {
         lumine.repositories.getForPath.and.returnValue(null);
         repository.getStatusSnapshot.and.returnValue({ initialized: false });
         let resolveRepository, resolveSnapshot;
@@ -1560,14 +1560,13 @@ describe("TabBarView", () => {
         );
         const newTab = createFileTab();
         const setup = newTab.setupVcsStatus();
-        expect(newTab.element).toHaveClass("vcs-status-pending");
-        expect(getComputedStyle(newTab.itemTitle).visibility).toBe("hidden");
+        expect(getComputedStyle(newTab.itemTitle).visibility).toBe("visible");
         expect(newTab.itemTitle.offsetWidth).toBeGreaterThan(0);
 
         resolveRepository(repository);
         await flushMicrotasks();
         expect(repository.ensureStatusSnapshot).toHaveBeenCalled();
-        expect(newTab.element).toHaveClass("vcs-status-pending");
+        expect(getComputedStyle(newTab.itemTitle).visibility).toBe("visible");
 
         repository.isPathIgnoredCached.and.returnValue(true);
         repository.getStatusSnapshot.and.returnValue({ initialized: true });
@@ -1575,18 +1574,41 @@ describe("TabBarView", () => {
         await setup;
 
         expect(newTab.itemTitle).toHaveClass("status-ignored");
-        expect(newTab.element).not.toHaveClass("vcs-status-pending");
         expect(getComputedStyle(newTab.itemTitle).visibility).toBe("visible");
       });
 
-      it("reveals an ordinary title when discovery finds no repository", async () => {
+      it("shows a non-Git title immediately while discovery is still pending", async () => {
+        const filePath = path.join(temp.mkdirSync("tabs-outside-git-"), "[c] main_exp.dat");
+        fs.writeFileSync(filePath, "sample text");
+        lumine.repositories.getForPath.and.returnValue(null);
+        let resolveRepository;
+        lumine.repositories.resolveForPath.and.returnValue(
+          new Promise((resolve) => (resolveRepository = resolve)),
+        );
+
+        const editor = await lumine.workspace.open(filePath);
+        const newTab = tabBar.tabForItem(editor);
+        const setup = newTab.setupVcsStatus();
+
+        expect(newTab.itemTitle.textContent).toBe("[c] main_exp.dat");
+        expect(getComputedStyle(newTab.itemTitle).visibility).toBe("visible");
+        await new Promise(requestAnimationFrame);
+        expect(getComputedStyle(newTab.itemTitle).visibility).toBe("visible");
+
+        resolveRepository(null);
+        await setup;
+        expect(getComputedStyle(newTab.itemTitle).visibility).toBe("visible");
+        expect(newTab.itemTitle).not.toHaveClass("status-ignored");
+      });
+
+      it("keeps an ordinary title when discovery finds no repository", async () => {
         lumine.repositories.getForPath.and.returnValue(null);
         lumine.repositories.resolveForPath.and.resolveTo(null);
 
         const newTab = createFileTab();
         await newTab.setupVcsStatus();
 
-        expect(newTab.element).not.toHaveClass("vcs-status-pending");
+        expect(getComputedStyle(newTab.itemTitle).visibility).toBe("visible");
         expect(newTab.itemTitle).not.toHaveClass("status-ignored");
       });
 
@@ -1646,8 +1668,9 @@ describe("TabBarView", () => {
         expect(getComputedStyle(tab1.itemTitle).visibility).toBe("visible");
       });
 
-      it("does not reveal a title from an obsolete startup lookup", async () => {
+      it("does not apply a Git color from an obsolete startup lookup", async () => {
         lumine.repositories.getForPath.and.returnValue(null);
+        repository.isPathIgnoredCached.and.returnValue(true);
         let resolveFirst, resolveCurrent;
         lumine.repositories.resolveForPath.and.returnValue(
           new Promise((resolve) => (resolveFirst = resolve)),
@@ -1658,15 +1681,17 @@ describe("TabBarView", () => {
         );
         const setup = newTab.setupVcsStatus();
 
-        resolveFirst(null);
+        resolveFirst(repository);
         await flushMicrotasks();
-        expect(getComputedStyle(newTab.itemTitle).visibility).toBe("hidden");
+        expect(getComputedStyle(newTab.itemTitle).visibility).toBe("visible");
+        expect(newTab.itemTitle).not.toHaveClass("status-ignored");
+        expect(newTab.repoSubscriptions).toBeUndefined();
         resolveCurrent(null);
         await setup;
         expect(getComputedStyle(newTab.itemTitle).visibility).toBe("visible");
       });
 
-      it("reveals the title if the first snapshot fails", async () => {
+      it("keeps the title visible if the first snapshot fails", async () => {
         repository.getStatusSnapshot.and.returnValue({ initialized: false });
         const error = new Error("Git unavailable");
         repository.ensureStatusSnapshot.and.rejectWith(error);
@@ -1675,7 +1700,7 @@ describe("TabBarView", () => {
         const newTab = createFileTab();
         await newTab.setupVcsStatus();
 
-        expect(newTab.element).not.toHaveClass("vcs-status-pending");
+        expect(getComputedStyle(newTab.itemTitle).visibility).toBe("visible");
         expect(console.error).toHaveBeenCalledWith("Unable to load tab Git status", error);
 
         repository.getStatusSnapshot.and.returnValue({ initialized: true });
@@ -1712,7 +1737,7 @@ describe("TabBarView", () => {
         await oldSetup;
 
         expect(tab.itemTitle).not.toHaveClass("status-ignored");
-        expect(tab.element).not.toHaveClass("vcs-status-pending");
+        expect(getComputedStyle(tab.itemTitle).visibility).toBe("visible");
         expect(tab.repoSubscriptions).toBeNull();
       });
 
