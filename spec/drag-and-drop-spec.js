@@ -1,5 +1,5 @@
 const path = require("path");
-const temp = require("@lumine-code/temp");
+const temp = require("@lumine-code/fs-temp");
 const { buildDragEvent, buildDragEvents } = require("./event-helpers.js");
 
 describe("Tabs workspace drag-and-drop integration", () => {
