@@ -101,7 +101,7 @@
     }
 
     &[data-file-state="modified"] {
-      --tab-file-state-color: var(--accent-color);
+      --tab-file-state-color: var(--accent-indicator-color);
     }
 
     &[data-file-state="conflicted"] {
@@ -118,10 +118,10 @@
     position: relative;
     top: 0;
     padding: 0;
-    height: var(--tab-height);
+    height: var(--ui-tab-height);
     z-index: 999;
     list-style: none;
-    background: var(--accent-color);
+    background: var(--accent-indicator-color);
     pointer-events: none;
 
     /* bar */
@@ -139,7 +139,7 @@
     &:after {
       content: "";
       position: absolute;
-      top: var(--tab-height);
+      top: var(--ui-tab-height);
       margin-top: -1px;
       margin-left: -2px;
       z-index: 9999;
