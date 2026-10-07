@@ -35,7 +35,7 @@ Commands available in `lumine-workspace`:
 
 ## Usage
 
-The Packages → Tabs menu and command palette act on the active tab. A tab's context menu acts on that tab. Close All Tabs closes the target pane's tabs; Close All Tabs in Workspace closes tabs throughout the window. Batch closing visits tabs one at a time and stops if a close is refused.
+The Packages → Tabs menu and command palette act on the active tab. A tab's context menu acts on that tab. Close All Tabs closes the target pane's tabs; Close All Tabs in Workspace closes tabs throughout the window. Batch closing visits closable tabs one at a time and stops if a close is refused. Permanent dock tabs stay open.
 
 Open in New Window moves the tab after the destination has accepted its contents. Dragging a tab between windows keeps its unsaved text, selections, and scroll position too. A move to an existing window is refused if that window has unsaved changes for the same file.
 
