@@ -100,16 +100,18 @@
       visibility: hidden;
     }
 
+    /* The dot describes persistence: local edits, disk divergence or backing
+       file loss. Git colors belong to the title's status-* classes. */
     &[data-file-state="modified"] {
       --tab-file-state-color: var(--accent-indicator-color);
     }
 
     &[data-file-state="conflicted"] {
-      --tab-file-state-color: var(--text-color-modified);
+      --tab-file-state-color: var(--text-color-warning);
     }
 
     &[data-file-state="removed"] {
-      --tab-file-state-color: var(--text-color-removed);
+      --tab-file-state-color: var(--text-color-error);
     }
   }
 
