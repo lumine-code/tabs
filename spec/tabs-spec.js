@@ -3,8 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const temp = require("@lumine-code/fs-temp");
 const TabBarView = require("../lib/tab-bar-view");
-const TabTransferService = require("../lib/tab-transfer-service");
-const main = require("../lib/main");
+const TabCommands = require("../lib/tab-commands");
 let {
   triggerMouseEvent,
   triggerClickEvent,
@@ -121,9 +120,8 @@ describe("Tabs package main", () => {
 });
 
 describe("TabBarView", () => {
-  let editor2;
-  let [deserializerDisposable, item1, item2, editor1, pane, tabBar, tabTransferService] =
-    Array.from([]);
+  let editor2, commands;
+  let [deserializerDisposable, item1, item2, editor1, pane, tabBar, transferScope] = Array.from([]);
 
   class TestView {
     static deserialize({ title, longTitle, iconName }) {
@@ -216,12 +214,16 @@ describe("TabBarView", () => {
     pane.addItem(item1, { index: 0 });
     pane.addItem(item2, { index: 2 });
     pane.activateItem(item2);
-    tabTransferService = new TabTransferService();
-    tabBar = new TabBarView(pane, "center", tabTransferService);
+    transferScope = lumine.paneItemTransfers.createScope();
+    tabBar = new TabBarView(pane, "center", transferScope);
+    commands = new TabCommands(new Map([[pane, tabBar]]));
+    jasmine.attachToDOM(lumine.workspace.getElement());
   });
 
   afterEach(() => {
-    tabTransferService.dispose();
+    commands.dispose();
+    tabBar.destroy();
+    transferScope.dispose();
     deserializerDisposable.dispose();
   });
 
@@ -236,11 +238,11 @@ describe("TabBarView", () => {
         right: 240,
       });
 
-      expect(tabBar.updateBarOccupancy()).toBe(false);
+      expect(tabBar.layout.updateOccupancy()).toBe(false);
       expect(tabBar.element.classList.contains("is-fully-occupied")).toBe(false);
 
       lastTabRect.and.returnValue({ right: 300 });
-      expect(tabBar.updateBarOccupancy()).toBe(true);
+      expect(tabBar.layout.updateOccupancy()).toBe(true);
       expect(tabBar.element.classList.contains("is-fully-occupied")).toBe(true);
     });
   });
@@ -675,7 +677,7 @@ describe("TabBarView", () => {
     describe("in docks", () => {
       beforeEach(() => {
         pane = lumine.workspace.getRightDock().getActivePane();
-        tabBar = new TabBarView(pane, "right", tabTransferService);
+        tabBar = new TabBarView(pane, "right", transferScope);
       });
 
       it("isn't shown if the method returns true", () => {
@@ -904,9 +906,13 @@ describe("TabBarView", () => {
     });
 
     describe("when tabs:close-tab is fired", () =>
-      it("closes the active tab", () => {
+      it("closes the active tab", async () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
-        lumine.commands.dispatch(tabBar.element, "tabs:close-tab");
+        lumine.commands.dispatch(
+          tabBar.interaction.contextTab?.element ?? tabBar.element,
+          "tabs:close-tab",
+        );
+        await flushMicrotasks();
         expect(pane.getItems().length).toBe(2);
         expect(pane.getItems().indexOf(item2)).toBe(-1);
         expect(tabBar.getTabs().length).toBe(2);
@@ -914,18 +920,26 @@ describe("TabBarView", () => {
       }));
 
     describe("when the bar's empty space was right-clicked last", () =>
-      it("leaves the tabs alone, having no target tab to act on", () => {
+      it("uses the active tab when a tab command is dispatched on empty bar space", async () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
         triggerClickEvent(tabBar.element, { button: 2 });
 
-        lumine.commands.dispatch(tabBar.element, "tabs:close-tab");
-        expect(pane.getItems().length).toBe(3);
+        lumine.commands.dispatch(
+          tabBar.interaction.contextTab?.element ?? tabBar.element,
+          "tabs:close-tab",
+        );
+        await flushMicrotasks();
+        expect(pane.getItems().length).toBe(2);
       }));
 
     describe("when tabs:close-other-tabs is fired", () =>
-      it("closes all other tabs except the active tab", () => {
+      it("closes all other tabs except the active tab", async () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
-        lumine.commands.dispatch(tabBar.element, "tabs:close-other-tabs");
+        lumine.commands.dispatch(
+          tabBar.interaction.contextTab?.element ?? tabBar.element,
+          "tabs:close-other-tabs",
+        );
+        await flushMicrotasks();
         expect(pane.getItems().length).toBe(1);
         expect(tabBar.getTabs().length).toBe(1);
         expect(tabBar.element.textContent).not.toMatch("sample.js");
@@ -933,10 +947,14 @@ describe("TabBarView", () => {
       }));
 
     describe("when tabs:close-tabs-to-right is fired", () =>
-      it("closes only the tabs to the right of the active tab", () => {
+      it("closes only the tabs to the right of the active tab", async () => {
         pane.activateItem(editor1);
         triggerClickEvent(tabBar.tabForItem(editor1).element, { button: 2 });
-        lumine.commands.dispatch(tabBar.element, "tabs:close-tabs-to-right");
+        lumine.commands.dispatch(
+          tabBar.interaction.contextTab?.element ?? tabBar.element,
+          "tabs:close-tabs-to-right",
+        );
+        await flushMicrotasks();
         expect(pane.getItems().length).toBe(2);
         expect(tabBar.getTabs().length).toBe(2);
         expect(tabBar.element.textContent).not.toMatch("Item 2");
@@ -944,10 +962,14 @@ describe("TabBarView", () => {
       }));
 
     describe("when tabs:close-tabs-to-left is fired", () =>
-      it("closes only the tabs to the left of the active tab", () => {
+      it("closes only the tabs to the left of the active tab", async () => {
         pane.activateItem(editor1);
         triggerClickEvent(tabBar.tabForItem(editor1).element, { button: 2 });
-        lumine.commands.dispatch(tabBar.element, "tabs:close-tabs-to-left");
+        lumine.commands.dispatch(
+          tabBar.interaction.contextTab?.element ?? tabBar.element,
+          "tabs:close-tabs-to-left",
+        );
+        await flushMicrotasks();
         expect(pane.getItems().length).toBe(2);
         expect(tabBar.getTabs().length).toBe(2);
         expect(tabBar.element.textContent).toMatch("Item 2");
@@ -955,26 +977,38 @@ describe("TabBarView", () => {
       }));
 
     describe("when tabs:close-all-tabs is fired", () =>
-      it("closes all the tabs", () => {
+      it("closes all the tabs", async () => {
         expect(pane.getItems().length).toBeGreaterThan(0);
-        lumine.commands.dispatch(tabBar.element, "tabs:close-all-tabs");
+        lumine.commands.dispatch(
+          tabBar.interaction.contextTab?.element ?? tabBar.element,
+          "tabs:close-all-tabs",
+        );
+        await flushMicrotasks();
         expect(pane.getItems().length).toBe(0);
       }));
 
     describe("when tabs:close-saved-tabs is fired", () =>
-      it("closes all the saved tabs", () => {
+      it("closes all the saved tabs", async () => {
         item1.fileState = "conflicted";
-        lumine.commands.dispatch(tabBar.element, "tabs:close-saved-tabs");
+        lumine.commands.dispatch(
+          tabBar.interaction.contextTab?.element ?? tabBar.element,
+          "tabs:close-saved-tabs",
+        );
+        await flushMicrotasks();
         expect(pane.getItems().length).toBe(1);
         expect(pane.getItems()[0]).toBe(item1);
       }));
 
     describe("when tabs:split-up is fired", () =>
-      it("splits the selected tab up", () => {
+      it("splits the selected tab up", async () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
         expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
 
-        lumine.commands.dispatch(tabBar.element, "tabs:split-up");
+        lumine.commands.dispatch(
+          tabBar.interaction.contextTab?.element ?? tabBar.element,
+          "tabs:split-up",
+        );
+        await flushMicrotasks();
         expect(lumine.workspace.getCenter().getPanes().length).toBe(2);
         expect(lumine.workspace.getCenter().getPanes()[1]).toBe(pane);
         expect(lumine.workspace.getCenter().getPanes()[0].getItems()[0].getTitle()).toBe(
@@ -983,11 +1017,15 @@ describe("TabBarView", () => {
       }));
 
     describe("when tabs:split-down is fired", () =>
-      it("splits the selected tab down", () => {
+      it("splits the selected tab down", async () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
         expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
 
-        lumine.commands.dispatch(tabBar.element, "tabs:split-down");
+        lumine.commands.dispatch(
+          tabBar.interaction.contextTab?.element ?? tabBar.element,
+          "tabs:split-down",
+        );
+        await flushMicrotasks();
         expect(lumine.workspace.getCenter().getPanes().length).toBe(2);
         expect(lumine.workspace.getCenter().getPanes()[0]).toBe(pane);
         expect(lumine.workspace.getCenter().getPanes()[1].getItems()[0].getTitle()).toBe(
@@ -996,11 +1034,15 @@ describe("TabBarView", () => {
       }));
 
     describe("when tabs:split-left is fired", () =>
-      it("splits the selected tab to the left", () => {
+      it("splits the selected tab to the left", async () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
         expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
 
-        lumine.commands.dispatch(tabBar.element, "tabs:split-left");
+        lumine.commands.dispatch(
+          tabBar.interaction.contextTab?.element ?? tabBar.element,
+          "tabs:split-left",
+        );
+        await flushMicrotasks();
         expect(lumine.workspace.getCenter().getPanes().length).toBe(2);
         expect(lumine.workspace.getCenter().getPanes()[1]).toBe(pane);
         expect(lumine.workspace.getCenter().getPanes()[0].getItems()[0].getTitle()).toBe(
@@ -1009,11 +1051,15 @@ describe("TabBarView", () => {
       }));
 
     describe("when tabs:split-right is fired", () =>
-      it("splits the selected tab to the right", () => {
+      it("splits the selected tab to the right", async () => {
         triggerClickEvent(tabBar.tabForItem(item2).element, { button: 2 });
         expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
 
-        lumine.commands.dispatch(tabBar.element, "tabs:split-right");
+        lumine.commands.dispatch(
+          tabBar.interaction.contextTab?.element ?? tabBar.element,
+          "tabs:split-right",
+        );
+        await flushMicrotasks();
         expect(lumine.workspace.getCenter().getPanes().length).toBe(2);
         expect(lumine.workspace.getCenter().getPanes()[0]).toBe(pane);
         expect(lumine.workspace.getCenter().getPanes()[1].getItems()[0].getTitle()).toBe(
@@ -1022,43 +1068,25 @@ describe("TabBarView", () => {
       }));
 
     describe("when tabs:open-in-new-window is fired", () => {
-      describe("by right-clicking on a tab", () => {
-        beforeEach(() => {
-          triggerClickEvent(tabBar.tabForItem(item1).element, { button: 2 });
-          expect(lumine.workspace.getCenter().getPanes().length).toBe(1);
-          spyOn(lumine.application, "openWindow");
-        });
+      beforeEach(() => spyOn(transferScope, "openInNewWindow").and.resolveTo({}));
 
-        it("opens new window, closes current tab", () => {
-          lumine.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
-          expect(lumine.application.openWindow).toHaveBeenCalled();
-
-          expect(pane.getItems().length).toBe(2);
-          expect(tabBar.getTabs().length).toBe(2);
-          expect(tabBar.element.textContent).toMatch("Item 2");
-          expect(tabBar.element.textContent).not.toMatch("Item 1");
-        });
-
-        it("resets the width on every tab", () => {
-          // mouseenter (which will get emitted when going to right-click the tab) fixes the tab widths
-          // Make sure after the command is executed the widths are reset
-          triggerMouseEvent("mouseenter", tabBar.element);
-          lumine.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
-
-          jasmine.attachToDOM(tabBar.element);
-          expect(tabBar.tabAtIndex(0).element.style.maxWidth).toBe("");
-          expect(tabBar.tabAtIndex(1).element.style.maxWidth).toBe("");
-        });
+      it("passes the context target to the shared transfer scope without closing it first", () => {
+        lumine.commands.dispatch(tabBar.tabForItem(item1).element, "tabs:open-in-new-window");
+        expect(transferScope.openInNewWindow).toHaveBeenCalledOnceWith(pane, item1);
+        expect(pane.getItems().length).toBe(3);
       });
 
-      describe("from the command palette", () =>
-        // See #309 for background
+      it("resets the width on every tab before transferring", () => {
+        triggerMouseEvent("mouseenter", tabBar.element);
+        lumine.commands.dispatch(tabBar.tabForItem(item1).element, "tabs:open-in-new-window");
+        expect(tabBar.tabAtIndex(0).element.style.maxWidth).toBe("");
+        expect(tabBar.tabAtIndex(1).element.style.maxWidth).toBe("");
+      });
 
-        it("does nothing", () => {
-          spyOn(lumine.application, "openWindow");
-          lumine.commands.dispatch(tabBar.element, "tabs:open-in-new-window");
-          expect(lumine.application.openWindow).not.toHaveBeenCalled();
-        }));
+      it("uses the active tab when dispatched from the palette", () => {
+        lumine.commands.dispatch(pane.getElement(), "tabs:open-in-new-window");
+        expect(transferScope.openInNewWindow).toHaveBeenCalledOnceWith(pane, item2);
+      });
     });
   });
 
@@ -1068,26 +1096,31 @@ describe("TabBarView", () => {
     beforeEach(() => (paneElement = pane.getElement()));
 
     describe("when tabs:close-tab is fired", () => {
-      it("closes the active tab", () => {
+      it("closes the active tab", async () => {
         lumine.commands.dispatch(paneElement, "tabs:close-tab");
+        await flushMicrotasks();
         expect(pane.getItems().length).toBe(2);
         expect(pane.getItems().indexOf(item2)).toBe(-1);
         expect(tabBar.getTabs().length).toBe(2);
         expect(tabBar.element.textContent).not.toMatch("Item 2");
       });
 
-      it("does nothing if no tabs are open", () => {
+      it("does nothing if no tabs are open", async () => {
         lumine.commands.dispatch(paneElement, "tabs:close-tab");
+        await flushMicrotasks();
         lumine.commands.dispatch(paneElement, "tabs:close-tab");
+        await flushMicrotasks();
         lumine.commands.dispatch(paneElement, "tabs:close-tab");
+        await flushMicrotasks();
         expect(pane.getItems().length).toBe(0);
         expect(tabBar.getTabs().length).toBe(0);
       });
     });
 
     describe("when tabs:close-other-tabs is fired", () =>
-      it("closes all other tabs except the active tab", () => {
+      it("closes all other tabs except the active tab", async () => {
         lumine.commands.dispatch(paneElement, "tabs:close-other-tabs");
+        await flushMicrotasks();
         expect(pane.getItems().length).toBe(1);
         expect(tabBar.getTabs().length).toBe(1);
         expect(tabBar.element.textContent).not.toMatch("sample.js");
@@ -1095,9 +1128,10 @@ describe("TabBarView", () => {
       }));
 
     describe("when tabs:close-tabs-to-right is fired", () =>
-      it("closes only the tabs to the right of the active tab", () => {
+      it("closes only the tabs to the right of the active tab", async () => {
         pane.activateItem(editor1);
         lumine.commands.dispatch(paneElement, "tabs:close-tabs-to-right");
+        await flushMicrotasks();
         expect(pane.getItems().length).toBe(2);
         expect(tabBar.getTabs().length).toBe(2);
         expect(tabBar.element.textContent).not.toMatch("Item 2");
@@ -1105,16 +1139,18 @@ describe("TabBarView", () => {
       }));
 
     describe("when tabs:close-all-tabs is fired", () =>
-      it("closes all the tabs", () => {
+      it("closes all the tabs", async () => {
         expect(pane.getItems().length).toBeGreaterThan(0);
         lumine.commands.dispatch(paneElement, "tabs:close-all-tabs");
+        await flushMicrotasks();
         expect(pane.getItems().length).toBe(0);
       }));
 
     describe("when tabs:close-saved-tabs is fired", () =>
-      it("closes all the saved tabs", () => {
+      it("closes all the saved tabs", async () => {
         item1.fileState = "removed";
         lumine.commands.dispatch(paneElement, "tabs:close-saved-tabs");
+        await flushMicrotasks();
         expect(pane.getItems().length).toBe(1);
         expect(pane.getItems()[0]).toBe(item1);
       }));
@@ -1122,7 +1158,7 @@ describe("TabBarView", () => {
     describe("when pane:close is fired", () =>
       it("destroys all the tabs within the pane", async () => {
         const pane2 = pane.splitDown({ copyActiveItem: true });
-        const tabBar2 = new TabBarView(pane2, "center", tabTransferService);
+        const tabBar2 = new TabBarView(pane2, "center", transferScope);
         const tab2 = tabBar2.tabAtIndex(0);
         spyOn(tab2, "destroy");
 
@@ -1165,10 +1201,10 @@ describe("TabBarView", () => {
 
     it("forgets the right-clicked tab when the bar's empty space is right-clicked", () => {
       triggerClickEvent(tabBar.tabAtIndex(0).element, { button: 2 });
-      expect(tabBar.rightClickedTab).toBe(tabBar.tabAtIndex(0));
+      expect(tabBar.interaction.contextTab).toBe(tabBar.tabAtIndex(0));
 
       triggerClickEvent(tabBar.element, { button: 2 });
-      expect(tabBar.rightClickedTab).toBeUndefined();
+      expect(tabBar.interaction.contextTab).toBeUndefined();
       expect(tabBar.tabAtIndex(0).element.classList.contains("right-clicked")).toBe(false);
     });
   });
@@ -1296,7 +1332,7 @@ describe("TabBarView", () => {
         const item3 = new TestView("Item 3");
         const item4 = new TestView("Item 4");
         const pane2 = pane.splitRight({ items: [item3, item4] });
-        const tabBar2 = new TabBarView(pane2, "center", tabTransferService);
+        const tabBar2 = new TabBarView(pane2, "center", transferScope);
 
         expect(tabBar.element).not.toHaveClass("hidden");
         expect(tabBar2.element).not.toHaveClass("hidden");
@@ -1419,7 +1455,7 @@ describe("TabBarView", () => {
         it("makes the tab permanent in the new pane", () => {
           pane.activateItem(editor1);
           const pane2 = pane.splitRight({ copyActiveItem: true });
-          const tabBar2 = new TabBarView(pane2, "center", tabTransferService);
+          const tabBar2 = new TabBarView(pane2, "center", transferScope);
           const newEditor = pane2.getActiveItem();
           expect(isPending(newEditor)).toBe(false);
           expect(tabBar2.tabForItem(newEditor).element.querySelector(".title")).not.toHaveClass(
@@ -1442,7 +1478,7 @@ describe("TabBarView", () => {
           pane.activateItem(editor1);
           const pane2 = pane.splitRight();
 
-          const tabBar2 = new TabBarView(pane2, "center", tabTransferService);
+          const tabBar2 = new TabBarView(pane2, "center", transferScope);
           pane.moveItemToPane(editor1, pane2, 0);
           pane2.activateItem(editor1);
 
@@ -1486,6 +1522,8 @@ describe("TabBarView", () => {
       repository.getWorkingDirectory.and.returnValue(lumine.project.getPaths()[0]);
       repository.getStatusSnapshot.and.returnValue({ initialized: true });
       repository.ensureStatusSnapshot.and.resolveTo({ initialized: true });
+      repository.onDidDestroy = () => ({ dispose() {} });
+      spyOn(lumine.repositories, "retain").and.callFake(() => ({ dispose() {} }));
       repository.onDidChangeStatusSnapshot = function (callback) {
         if (this.changeStatusSnapshotCallbacks == null) {
           this.changeStatusSnapshotCallbacks = [];
@@ -1864,8 +1902,10 @@ describe("TabBarView", () => {
 
     if (lumine.workspace.getLeftDock != null) {
       describe("a pane in the dock", () => {
-        beforeEach(() => main.activate());
-        afterEach(() => main.deactivate());
+        beforeEach(async () => {
+          await lumine.packages.activatePackage("tabs");
+        });
+        afterEach(() => lumine.packages.deactivatePackage("tabs"));
         it("gets decorated with tabs", () => {
           const dock = lumine.workspace.getLeftDock();
           const dockElement = dock.getElement();

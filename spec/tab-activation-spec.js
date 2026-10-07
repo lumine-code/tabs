@@ -28,22 +28,10 @@ describe("tab activation across panes", () => {
 
   function prepareLocalDrop(sourcePane, item, targetPane, allowedLocations = ["center"]) {
     const TabDropProvider = require("../lib/tab-drop-provider");
-    const provider = new TabDropProvider(main.tabTransferService, {
-      getTabBarForPane: (pane) => main.tabBarViews.find((view) => view.pane === pane),
-    });
-    const token = main.tabTransferService.createSession(sourcePane, item);
-    const descriptor = {
-      kind: "pane-item",
-      token,
-      effect: "move",
-      allowedLocations,
-      source: {
-        windowId: lumine.window.getId(),
-        paneId: sourcePane.id,
-        onlyItem: sourcePane.getItems().length === 1,
-      },
-      items: [{ type: "pane-item", uri: item.getURI() }],
-    };
+    const provider = new TabDropProvider(main.transferScope);
+    const descriptor = main.transferScope.createTransfer(sourcePane, item);
+    descriptor.allowedLocations = allowedLocations;
+    const token = descriptor.token;
     return {
       provider,
       token,
@@ -65,7 +53,7 @@ describe("tab activation across panes", () => {
     rightPane.activateItem(previousEditor);
     leftPane.activate();
     center = lumine.workspace.getCenter();
-    bar = main.tabBarViews.find((view) => view.pane === rightPane);
+    bar = main.tabBarViews.get(rightPane);
     changes = [];
     subscription = center.onDidChangeActivePaneItem((item) => changes.push(item));
   });
@@ -149,7 +137,7 @@ describe("tab activation across panes", () => {
     expect(leftPane.getActiveItem()).toBe(chosenEditor);
     expect(center.getActivePane()).toBe(leftPane);
     expect(changedItemIds()).toEqual([chosenEditor.id]);
-    expect(main.tabTransferService.getSession(token)).toBeNull();
+    expect(lumine.workspaceDrops.getSession(token)).toBeUndefined();
     expect(lumine.views.getView(chosenEditor).contains(document.activeElement)).toBe(true);
   });
 
@@ -297,7 +285,7 @@ describe("tab activation across panes", () => {
         await waitForFrames(() => !rightPane.getItems().includes(chosenEditor));
         expect(chosenEditor.isDestroyed()).toBe(true);
       } else {
-        expect(bar.rightClickedTab.item).toBe(chosenEditor);
+        expect(bar.interaction.contextTab.item).toBe(chosenEditor);
         expect(rightPane.getItems()).toContain(chosenEditor);
       }
       expect(rightPane.getActiveItem()).toBe(previousEditor);

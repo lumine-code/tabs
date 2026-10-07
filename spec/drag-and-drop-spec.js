@@ -3,12 +3,31 @@ const temp = require("@lumine-code/fs-temp");
 const { buildDragEvent, buildDragEvents } = require("./event-helpers.js");
 
 describe("Tabs workspace drag-and-drop integration", () => {
-  let directory, firstPath, secondPath, firstItem, secondItem, pane, paneElement;
+  let directory, firstPath, secondPath, firstItem, secondItem, pane, paneElement, main;
 
   const tabForItem = (item) =>
     Array.from(paneElement.querySelectorAll(":scope > .tab-bar > .tab")).find(
       (tab) => tab.item === item,
     );
+
+  const remoteDescriptor = (uri, modifiedText = "source draft") => ({
+    kind: "pane-item",
+    token: "remote-transfer-token",
+    effect: "move",
+    allowedLocations: ["center"],
+    source: { windowId: lumine.window.getId() + 1, paneId: 1, onlyItem: true },
+    items: [{ type: "pane-item", uri, fileState: "modified", modifiedText }],
+  });
+
+  const startRemoteDrop = (descriptor) => {
+    const TabDropProvider = require("../lib/tab-drop-provider");
+    const provider = new TabDropProvider(main.transferScope);
+    const prepared = provider.prepareDrop({ descriptor, pane });
+    return provider.perform(
+      { pane, index: 0, surface: "tab-bar", resolvePane: () => pane },
+      prepared,
+    );
+  };
 
   const dispatchDrag = (source, target, { x = 50, y = 50, pageX = x } = {}) => {
     const [dragStart] = buildDragEvents(source, target);
@@ -37,7 +56,7 @@ describe("Tabs workspace drag-and-drop integration", () => {
     secondItem = await lumine.workspace.open(secondPath);
     pane = lumine.workspace.getActivePane();
     paneElement = pane.getElement();
-    await lumine.packages.activatePackage("tabs");
+    main = (await lumine.packages.activatePackage("tabs")).mainModule;
     jasmine.attachToDOM(lumine.workspace.getElement());
   });
 
@@ -156,6 +175,69 @@ describe("Tabs workspace drag-and-drop integration", () => {
       "right",
       "left",
     ]);
+  });
+
+  it("rejects a remote move that would overwrite a dirty target editor", async () => {
+    firstItem.setText("target draft");
+    firstItem.setCursorBufferPosition([0, 5]);
+    const targetState = firstItem.serializeViewState();
+    const commit = spyOn(lumine.workspaceDrops, "commit").and.resolveTo(true);
+
+    await expectAsync(startRemoteDrop(remoteDescriptor(firstPath))).toBeRejected();
+
+    expect(firstItem.getText()).toBe("target draft");
+    expect(firstItem.serializeViewState()).toEqual(targetState);
+    expect(pane.getItems()).toEqual([firstItem, secondItem]);
+    expect(pane.getActiveItem()).toBe(secondItem);
+    expect(commit).not.toHaveBeenCalled();
+  });
+
+  it("discards a pending remote open when the tabs package is deactivated", async () => {
+    let finishOpen;
+    const pendingOpen = new Promise((resolve) => (finishOpen = resolve));
+    const stagedItem = lumine.workspace.buildTextEditor();
+    const open = spyOn(lumine.workspace, "open").and.returnValue(pendingOpen);
+    const commit = spyOn(lumine.workspaceDrops, "commit").and.resolveTo(true);
+    const outcome = startRemoteDrop(remoteDescriptor("")).then(
+      (result) => ({ result }),
+      (error) => ({ error }),
+    );
+    await conditionPromise(() => open.calls.count() === 1);
+
+    await lumine.packages.deactivatePackage("tabs");
+    pane.addItem(stagedItem);
+    finishOpen(stagedItem);
+
+    expect((await outcome).error).toEqual(jasmine.any(Error));
+    expect(stagedItem.isDestroyed()).toBe(true);
+    expect(pane.getItems()).toEqual([firstItem, secondItem]);
+    expect(pane.getActiveItem()).toBe(secondItem);
+    expect(commit).not.toHaveBeenCalled();
+  });
+
+  it("retains an acknowledged remote move without focusing after package deactivation", async () => {
+    let finishCommit;
+    const pendingCommit = new Promise((resolve) => (finishCommit = resolve));
+    const stagedItem = lumine.workspace.buildTextEditor();
+    spyOn(lumine.workspace, "open").and.callFake(async () => {
+      pane.addItem(stagedItem);
+      return stagedItem;
+    });
+    const commit = spyOn(lumine.workspaceDrops, "commit").and.returnValue(pendingCommit);
+    const focus = spyOn(lumine.window, "focus").and.resolveTo();
+    const outcome = startRemoteDrop(remoteDescriptor(""));
+    await conditionPromise(() => commit.calls.count() === 1);
+
+    await lumine.packages.deactivatePackage("tabs");
+    finishCommit(true);
+    const result = await outcome;
+
+    expect(result.item).toBe(stagedItem);
+    expect(stagedItem.isDestroyed()).toBe(false);
+    expect(stagedItem.getText()).toBe("source draft");
+    expect(pane.getItems()).toContain(stagedItem);
+    expect(pane.getActiveItem()).toBe(secondItem);
+    expect(focus).not.toHaveBeenCalled();
   });
 
   it("moves a tab into the split selected by the core pane target", async () => {

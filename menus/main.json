@@ -1,4 +1,74 @@
 {
+  "menu": [
+    {
+      "label": "Packages",
+      "submenu": [
+        {
+          "label": "Tabs",
+          "submenu": [
+            {
+              "label": "Keep Pending Tab",
+              "command": "tabs:keep-pending-tab"
+            },
+            {
+              "label": "Open in New Window",
+              "command": "tabs:open-in-new-window"
+            },
+            {
+              "type": "separator"
+            },
+            {
+              "label": "Split Up",
+              "command": "tabs:split-up"
+            },
+            {
+              "label": "Split Down",
+              "command": "tabs:split-down"
+            },
+            {
+              "label": "Split Left",
+              "command": "tabs:split-left"
+            },
+            {
+              "label": "Split Right",
+              "command": "tabs:split-right"
+            },
+            {
+              "type": "separator"
+            },
+            {
+              "label": "Close Tab",
+              "command": "tabs:close-tab"
+            },
+            {
+              "label": "Close Other Tabs",
+              "command": "tabs:close-other-tabs"
+            },
+            {
+              "label": "Close Tabs to the Right",
+              "command": "tabs:close-tabs-to-right"
+            },
+            {
+              "label": "Close Tabs to the Left",
+              "command": "tabs:close-tabs-to-left"
+            },
+            {
+              "label": "Close Saved Tabs",
+              "command": "tabs:close-saved-tabs"
+            },
+            {
+              "label": "Close All Tabs",
+              "command": "tabs:close-all-tabs"
+            },
+            {
+              "label": "Close All Tabs in Workspace",
+              "command": "tabs:close-all-tabs-in-workspace"
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "context-menu": {
     ".tab": [
       {
@@ -65,7 +135,7 @@
         "type": "separator"
       },
       {
-        "label": "Open In New Window",
+        "label": "Open in New Window",
         "command": "tabs:open-in-new-window"
       },
       {

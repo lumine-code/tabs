@@ -127,7 +127,7 @@ module.exports.buildDragEvent = function (type, target, dataTransfer, options) {
   return event;
 };
 
-module.exports.buildWheelEvent = (delta) => new WheelEvent("mousewheel", { wheelDeltaY: delta });
+module.exports.buildWheelEvent = (delta) => new WheelEvent("wheel", { deltaY: -delta });
 
 module.exports.buildWheelPlusShiftEvent = (delta) =>
-  new WheelEvent("mousewheel", { wheelDeltaY: delta, shiftKey: true });
+  new WheelEvent("wheel", { deltaY: -delta, shiftKey: true });
