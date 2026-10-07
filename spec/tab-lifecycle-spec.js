@@ -67,4 +67,22 @@ describe("tabs package ownership", () => {
 
     expect(repositorySubscription.dispose).toHaveBeenCalledTimes(1);
   });
+
+  it("releases the unloaded generation before loading its replacement modules", async () => {
+    const oldTab = tab;
+    const oldConstructor = tab.constructor;
+    const editor = tab.item;
+    spyOn(oldTab, "updateFileState").and.callThrough();
+
+    await lumine.packages.unloadPackage("tabs");
+    main = (await lumine.packages.activatePackage(packageRoot)).mainModule;
+    tab = main.tabBarViews.get(pane).tabForItem(editor);
+    editor.setText("new generation");
+
+    expect(oldTab.destroyed).toBe(true);
+    expect(tab.constructor).not.toBe(oldConstructor);
+    expect(tab.element.dataset.fileState).toBe("modified");
+    expect(oldTab.updateFileState).not.toHaveBeenCalled();
+    expect(main.tabBarViews.get(pane).getTabs()).toEqual([tab]);
+  });
 });
