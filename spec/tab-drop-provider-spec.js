@@ -17,6 +17,7 @@ describe("TabDropProvider", () => {
       getItems: () => pane.items,
       getActiveItem: () => pane.activeItem,
       getActiveItemIndex: () => pane.items.indexOf(pane.activeItem),
+      transactActiveState: (callback) => callback(),
       moveItem: jasmine.createSpy("moveItem").and.callFake((movedItem, index) => {
         pane.items.splice(pane.items.indexOf(movedItem), 1);
         pane.items.splice(index, 0, movedItem);
@@ -27,8 +28,9 @@ describe("TabDropProvider", () => {
           pane.items.splice(pane.items.indexOf(movedItem), 1);
           otherPane.items.splice(index, 0, movedItem);
         }),
-      activateItem: jasmine.createSpy("activateItem").and.callFake((activeItem) => {
+      activateItem: jasmine.createSpy("activateItem").and.callFake((activeItem, options = {}) => {
         pane.activeItem = activeItem;
+        if (options.activatePane) pane.activate();
       }),
       activate: jasmine.createSpy("activate"),
       destroyItem: jasmine.createSpy("destroyItem").and.callFake(async (destroyedItem) => {
@@ -133,7 +135,7 @@ describe("TabDropProvider", () => {
 
     expect(dropContext.resolvePane).toHaveBeenCalledOnceWith({ allowSplit: true });
     expect(sourcePane.moveItemToPane).toHaveBeenCalledOnceWith(item, targetPane, 1);
-    expect(targetPane.activateItem).toHaveBeenCalledOnceWith(item);
+    expect(targetPane.activateItem).toHaveBeenCalledOnceWith(item, { activatePane: true });
     expect(targetPane.activate).toHaveBeenCalled();
     expect(tabTransferService.release).toHaveBeenCalledOnceWith(
       "transfer-token",

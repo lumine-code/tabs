@@ -1477,11 +1477,13 @@ describe("TabBarView", () => {
 
       // Mock the repository
       repository = jasmine.createSpyObj("repo", [
+        "getWorkingDirectory",
         "isPathIgnoredCached",
         "getPathStatusSummary",
         "getStatusSnapshot",
         "ensureStatusSnapshot",
       ]);
+      repository.getWorkingDirectory.and.returnValue(lumine.project.getPaths()[0]);
       repository.getStatusSnapshot.and.returnValue({ initialized: true });
       repository.ensureStatusSnapshot.and.resolveTo({ initialized: true });
       repository.onDidChangeStatusSnapshot = function (callback) {
