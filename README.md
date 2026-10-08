@@ -2,6 +2,8 @@
 
 Display a selectable tab for each open item in a pane.
 
+Fork of [pulsar-edit/pulsar](https://github.com/pulsar-edit/pulsar) (`packages/tabs`).
+
 ## Features
 
 - **Per-pane tabs**: shows a tab bar with a tab for every open editor and item in each pane.
