@@ -289,6 +289,40 @@ describe("TabBarView", () => {
       expect(tabBar.tabAtIndex(1).element.style.maxWidth).toBe("");
     }));
 
+  it("keeps widths stable while closing hovered tabs and fills the bar immediately on mouseleave", async () => {
+    const sheet = lumine.styles.addStyleSheet(
+      fs.readFileSync(path.join(__dirname, "../styles/main.css"), "utf8"),
+      { priority: 1000 },
+    );
+    try {
+      tabBar.element.style.width = "300px";
+      jasmine.attachToDOM(tabBar.element);
+      const tabs = tabBar.getTabs();
+      const widths = tabs.map((tab) => tab.element.getBoundingClientRect().width);
+      triggerMouseEvent("mouseenter", tabBar.element);
+      for (const tab of tabs) {
+        for (const animation of tab.element.getAnimations()) animation.finish();
+      }
+
+      await tabBar.closeTab(tabs[0]);
+
+      const remaining = tabBar.getTabs();
+      for (const [index, tab] of remaining.entries()) {
+        expect(tab.element.getBoundingClientRect().width).toBeCloseTo(widths[index + 1], 1);
+      }
+
+      triggerMouseEvent("mouseleave", tabBar.element);
+
+      const occupiedWidth = remaining.reduce(
+        (sum, tab) => sum + tab.element.getBoundingClientRect().width,
+        0,
+      );
+      expect(occupiedWidth).toBeCloseTo(tabBar.element.getBoundingClientRect().width, 1);
+    } finally {
+      sheet.dispose();
+    }
+  });
+
   describe("when a drag leave event moves the mouse from the tab bar", () =>
     it("resets the width on every tab", () => {
       jasmine.attachToDOM(tabBar.element);

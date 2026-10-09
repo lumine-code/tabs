@@ -13,9 +13,10 @@
     padding-right: calc(10px + var(--close-icon-size) + 2px);
     -webkit-user-drag: element;
     flex: 1;
+    /* Hover locks and their resets apply immediately. Animating max-width
+       relayouts the whole bar while its close targets are moving. */
     max-width: 175px;
     min-width: 40px;
-    transition: max-width 0.25s ease-in-out;
 
     &.active {
       flex: 2;
