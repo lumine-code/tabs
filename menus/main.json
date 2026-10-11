@@ -7,15 +7,8 @@
           "label": "Tabs",
           "submenu": [
             {
-              "label": "Keep Pending Tab",
-              "command": "tabs:keep-pending-tab"
-            },
-            {
               "label": "Open in New Window",
               "command": "tabs:open-in-new-window"
-            },
-            {
-              "type": "separator"
             },
             {
               "label": "Split Up",
@@ -137,18 +130,6 @@
       {
         "label": "Open in New Window",
         "command": "tabs:open-in-new-window"
-      },
-      {
-        "type": "separator"
-      }
-    ],
-    ".tab.pending-tab": [
-      {
-        "type": "separator"
-      },
-      {
-        "label": "Keep Pending Tab",
-        "command": "tabs:keep-pending-tab"
       },
       {
         "type": "separator"

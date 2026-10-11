@@ -1395,6 +1395,74 @@ describe("TabBarView", () => {
     describe("when tab's pane item is pending", () => {
       beforeEach(() => pane.destroyItems());
 
+      describe("when double-clicking a tab", () => {
+        it("toggles a permanent tab to pending and back", async () => {
+          const editor = await lumine.workspace.open("sample.txt");
+          const tab = tabBar.tabForItem(editor);
+
+          triggerMouseEvent("dblclick", tab.itemTitle);
+          expect(pane.getPendingItem()).toBe(editor);
+          expect(tab.element).toHaveClass("pending-tab");
+          expect(tab.itemTitle).toHaveClass("temp");
+
+          triggerMouseEvent("dblclick", tab.itemTitle);
+          expect(pane.getPendingItem()).toBeNull();
+          expect(tab.element).not.toHaveClass("pending-tab");
+          expect(tab.itemTitle).not.toHaveClass("temp");
+        });
+
+        it("makes the clicked tab pending and keeps the previous preview open", async () => {
+          const editor = await lumine.workspace.open("sample.txt");
+          const previous = await lumine.workspace.open("sample2.txt", { pending: true });
+
+          triggerMouseEvent("dblclick", tabBar.tabForItem(editor).element);
+
+          expect(pane.getActiveItem()).toBe(editor);
+          expect(pane.getPendingItem()).toBe(editor);
+          expect(previous.isDestroyed()).toBe(false);
+          expect(tabBar.tabForItem(previous).element).not.toHaveClass("pending-tab");
+          expect(tabBar.tabForItem(previous).itemTitle).not.toHaveClass("temp");
+        });
+
+        it("replaces a tab made pending when the next preview is opened", async () => {
+          const editor = await lumine.workspace.open("sample.txt");
+          triggerMouseEvent("dblclick", tabBar.tabForItem(editor).element);
+
+          const next = await lumine.workspace.open("sample2.txt", { pending: true });
+
+          expect(editor.isDestroyed()).toBe(true);
+          expect(tabBar.tabForItem(editor)).toBeUndefined();
+          expect(pane.getPendingItem()).toBe(next);
+        });
+
+        it("clears pending on edits even after the item has terminated pending before", async () => {
+          const editor = await lumine.workspace.open("sample.txt", { pending: true });
+          const tab = tabBar.tabForItem(editor);
+          editor.terminatePendingState();
+          triggerMouseEvent("dblclick", tab.element);
+          expect(pane.getPendingItem()).toBe(editor);
+
+          editor.insertText("x");
+
+          expect(pane.getPendingItem()).toBeNull();
+          expect(tab.element).not.toHaveClass("pending-tab");
+          expect(tab.itemTitle).not.toHaveClass("temp");
+        });
+
+        it("ignores the close icon and context or non-primary double clicks", async () => {
+          const editor = await lumine.workspace.open("sample.txt");
+          const tab = tabBar.tabForItem(editor);
+
+          triggerMouseEvent("dblclick", tab.element.querySelector(".close-icon"));
+          triggerMouseEvent("dblclick", tab.element, { button: 0, ctrlKey: true });
+          triggerMouseEvent("dblclick", tab.element, { button: 1 });
+          triggerMouseEvent("dblclick", tab.element, { button: 2 });
+
+          expect(pane.getPendingItem()).toBeNull();
+          expect(editor.isDestroyed()).toBe(false);
+        });
+      });
+
       describe("when opening a new tab", () =>
         it("adds tab with class 'temp'", async () => {
           editor1 = null;
@@ -1408,8 +1476,8 @@ describe("TabBarView", () => {
           );
         }));
 
-      describe("when tabs:keep-pending-tab is triggered on the pane", () =>
-        it("terminates pending state on the tab's item", async () => {
+      describe("when pane:toggle-pending-item is triggered on the pane", () =>
+        it("toggles the active tab's pending state", async () => {
           editor1 = null;
           const o = await lumine.workspace.open("sample.txt", { pending: true });
           editor1 = o;
@@ -1418,9 +1486,14 @@ describe("TabBarView", () => {
           expect(isPending(editor1)).toBe(true);
           lumine.commands.dispatch(
             lumine.workspace.getActivePane().getElement(),
-            "tabs:keep-pending-tab",
+            "pane:toggle-pending-item",
           );
           expect(isPending(editor1)).toBe(false);
+          expect(tabBar.tabForItem(editor1).element).not.toHaveClass("pending-tab");
+
+          lumine.commands.dispatch(pane.getElement(), "pane:toggle-pending-item");
+          expect(isPending(editor1)).toBe(true);
+          expect(tabBar.tabForItem(editor1).element).toHaveClass("pending-tab");
         }));
 
       describe("when there is a temp tab already", () => {

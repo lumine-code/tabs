@@ -21,7 +21,6 @@ To install `tabs` search for it in the Install pane of the Lumine settings, or r
 
 Commands available in `lumine-workspace`:
 
-- `tabs:keep-pending-tab`: keep the target pending tab open,
 - `tabs:open-in-new-window`: move the target tab into a new window,
 - `tabs:split-up`: copy the target tab into a pane above,
 - `tabs:split-down`: copy the target tab into a pane below,
@@ -38,6 +37,8 @@ Commands available in `lumine-workspace`:
 ## Usage
 
 The Packages → Tabs menu and command palette act on the active tab. A tab's context menu acts on that tab. Close All Tabs closes the target pane's tabs; Close All Tabs in Workspace closes tabs throughout the window. Batch closing visits closable tabs one at a time and stops if a close is refused. Permanent dock tabs stay open.
+
+Double-click a tab to toggle its pending preview state, or use `pane:toggle-pending-item` for the active tab. A pending tab is replaced when another item is opened in that pane; double-click it again to keep it open. Marking another tab pending keeps the previous preview open as a permanent tab. Editing or saving a preview makes it permanent.
 
 Open in New Window moves the tab after the destination has accepted its contents. Dragging a tab between windows keeps its unsaved text, selections, and scroll position too. A move to an existing window is refused if that window has unsaved changes for the same file.
 
