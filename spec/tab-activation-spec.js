@@ -29,8 +29,8 @@ describe("tab activation across panes", () => {
   function prepareLocalDrop(sourcePane, item, targetPane, allowedLocations = ["center"]) {
     const TabDropProvider = require("../lib/tab-drop-provider");
     const provider = new TabDropProvider(main.transferScope);
+    item.getAllowedLocations = () => allowedLocations;
     const descriptor = main.transferScope.createTransfer(sourcePane, item);
-    descriptor.allowedLocations = allowedLocations;
     const token = descriptor.token;
     return {
       provider,
@@ -171,6 +171,7 @@ describe("tab activation across panes", () => {
     const dock = lumine.workspace.getRightDock();
     const destinationPane = dock.getActivePane();
     const dockEditor = lumine.workspace.buildTextEditor();
+    dockEditor.getAllowedLocations = () => ["right"];
     destinationPane.addItem(dockEditor);
     destinationPane.activateItem(dockEditor);
     dock.show();
@@ -223,11 +224,14 @@ describe("tab activation across panes", () => {
     const sourcePane = sourceDock.getActivePane();
     const draggedEditor = lumine.workspace.buildTextEditor();
     const siblingEditor = lumine.workspace.buildTextEditor();
+    draggedEditor.getAllowedLocations = () => ["left", "right"];
+    siblingEditor.getAllowedLocations = () => ["left"];
     sourcePane.addItem(draggedEditor);
     const siblingPane = sourcePane.splitDown({ items: [siblingEditor] });
     const destinationDock = lumine.workspace.getRightDock();
     const destinationPane = destinationDock.getActivePane();
     const oldDestinationEditor = lumine.workspace.buildTextEditor();
+    oldDestinationEditor.getAllowedLocations = () => ["right"];
     destinationPane.addItem(oldDestinationEditor);
     destinationPane.activateItem(oldDestinationEditor);
     destinationDock.show();

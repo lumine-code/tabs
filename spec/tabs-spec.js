@@ -100,6 +100,7 @@ describe("Tabs package main", () => {
       const centerTab = tabBarElement.querySelector(".tab");
       const dock = lumine.workspace.getLeftDock();
       const dockItem = {
+        getAllowedLocations: () => ["left"],
         element: document.createElement("div"),
         getTitle() {
           return "Dock Item";
@@ -124,6 +125,9 @@ describe("TabBarView", () => {
   let [deserializerDisposable, item1, item2, editor1, pane, tabBar, transferScope] = Array.from([]);
 
   class TestView {
+    getAllowedLocations() {
+      return ["center", "left", "right", "bottom"];
+    }
     static deserialize({ title, longTitle, iconName }) {
       return new TestView(title, longTitle, iconName);
     }
@@ -392,6 +396,9 @@ describe("TabBarView", () => {
 
     it("emits a warning when ::onDid... functions are not valid Disposables", () => {
       class BadView {
+        isSingleton() {
+          return true;
+        }
         constructor() {
           this.element = document.createElement("div");
         }
@@ -1191,7 +1198,12 @@ describe("TabBarView", () => {
 
     describe("when pane:close is fired", () =>
       it("destroys all the tabs within the pane", async () => {
-        const pane2 = pane.splitDown({ copyActiveItem: true });
+        const pane2 = (
+          await lumine.workspace.copyPaneItem(pane.getActiveItem(), {
+            sourcePane: pane,
+            splitDirection: "down",
+          })
+        ).pane;
         const tabBar2 = new TabBarView(pane2, "center", transferScope);
         const tab2 = tabBar2.tabAtIndex(0);
         spyOn(tab2, "destroy");
@@ -1559,9 +1571,14 @@ describe("TabBarView", () => {
           editor1 = o;
         });
 
-        it("makes the tab permanent in the new pane", () => {
+        it("makes the tab permanent in the new pane", async () => {
           pane.activateItem(editor1);
-          const pane2 = pane.splitRight({ copyActiveItem: true });
+          const pane2 = (
+            await lumine.workspace.copyPaneItem(pane.getActiveItem(), {
+              sourcePane: pane,
+              splitDirection: "right",
+            })
+          ).pane;
           const tabBar2 = new TabBarView(pane2, "center", transferScope);
           const newEditor = pane2.getActiveItem();
           expect(isPending(newEditor)).toBe(false);

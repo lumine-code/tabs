@@ -4,6 +4,8 @@ describe("bulk tab closing in docks", () => {
   let main, dockPane, permanent, closable, closeSubscription;
 
   const permanentItem = () => ({
+    isSingleton: () => true,
+    getAllowedLocations: () => ["center", "left", "right"],
     element: document.createElement("div"),
     getTitle: () => "Permanent Dock Item",
     isPermanentDockItem: () => true,
@@ -14,6 +16,7 @@ describe("bulk tab closing in docks", () => {
     dockPane = lumine.workspace.getLeftDock().getActivePane();
     permanent = permanentItem();
     closable = lumine.workspace.buildTextEditor();
+    closable.getAllowedLocations = () => ["left", "right"];
     dockPane.addItem(permanent);
     dockPane.addItem(closable);
   });
@@ -30,6 +33,7 @@ describe("bulk tab closing in docks", () => {
   it("continues through later docks when closing every tab in the workspace", async () => {
     const rightPane = lumine.workspace.getRightDock().getActivePane();
     const rightItem = lumine.workspace.buildTextEditor();
+    rightItem.getAllowedLocations = () => ["right"];
     rightPane.addItem(rightItem);
     jasmine.attachToDOM(lumine.workspace.getElement());
 
@@ -43,6 +47,7 @@ describe("bulk tab closing in docks", () => {
 
   it("still stops after a genuine close refusal following a permanent dock tab", async () => {
     const later = lumine.workspace.buildTextEditor();
+    later.getAllowedLocations = () => ["left"];
     dockPane.addItem(later, { index: dockPane.getItems().length });
     const requested = [];
     closeSubscription = lumine.workspace.onWillDestroyPaneItem(({ item, prevent }) => {

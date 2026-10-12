@@ -58,8 +58,8 @@ describe("tab command targets", () => {
     expect(pane.getItems()).toEqual([first, active]);
   });
 
-  it("offers split commands from an editor as well as a tab", () => {
-    lumine.commands.dispatch(pane.getElement(), "tabs:split-down");
+  it("offers split commands from an editor as well as a tab", async () => {
+    await lumine.commands.dispatch(pane.getElement(), "tabs:split-down");
     const copy = lumine.workspace
       .getCenter()
       .getPanes()
@@ -67,5 +67,50 @@ describe("tab command targets", () => {
         candidate.getItems().some((item) => item !== first && item !== active && item !== other),
       );
     expect(copy).toBeDefined();
+  });
+
+  it("copies the exact inactive tab while preserving the source pane's selected item", async () => {
+    const result = await barFor(pane).splitTab("splitLeft", barFor(pane).tabForItem(first));
+    expect(result.item).not.toBe(first);
+    expect(result.item.getBuffer()).toBe(first.getBuffer());
+    expect(result.pane.getActiveItem()).toBe(result.item);
+    expect(pane.getActiveItem()).toBe(active);
+    expect(first.isDestroyed()).toBe(false);
+  });
+
+  it("declines a singleton copy without creating an empty split", async () => {
+    const item = {
+      element: document.createElement("div"),
+      getTitle: () => "Singleton fixture",
+      isSingleton: () => true,
+    };
+    pane.addItem(item);
+    const before = lumine.workspace.getCenter().getPanes().slice();
+    const warning = spyOn(lumine.notifications, "addWarning");
+    await lumine.commands.dispatch(barFor(pane).tabForItem(item).itemTitle, "tabs:split-right");
+    expect(lumine.workspace.getCenter().getPanes()).toEqual(before);
+    expect(warning).toHaveBeenCalled();
+    expect(warning.calls.mostRecent().args[1].detail).toMatch(/one instance.*cannot be copied/i);
+    expect(pane.getItems()).toContain(item);
+  });
+
+  it("cancels a delayed copy when the clicked source closes and destroys the late result", async () => {
+    let finish;
+    const pending = new Promise((resolve) => {
+      finish = resolve;
+    });
+    spyOn(first, "copy").and.returnValue(pending);
+    const before = lumine.workspace.getCenter().getPanes().slice();
+    const command = lumine.commands.dispatch(
+      barFor(pane).tabForItem(first).itemTitle,
+      "tabs:split-right",
+    );
+    await pane.destroyItem(first, true);
+    await command;
+    const late = lumine.workspace.buildTextEditor();
+    finish(late);
+    await flushMicrotasks();
+    expect(late.isDestroyed()).toBe(true);
+    expect(lumine.workspace.getCenter().getPanes()).toEqual(before);
   });
 });
