@@ -24,7 +24,7 @@ describe("tab icons", () => {
   };
 
   const addItem = (item) => {
-    item.isSingleton = () => true;
+    item.canCopy = () => false;
     const pane = lumine.workspace.getActivePane();
     pane.addItem(item);
     pane.activateItem(item);

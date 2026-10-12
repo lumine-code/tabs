@@ -82,15 +82,14 @@ describe("tab command targets", () => {
     const item = {
       element: document.createElement("div"),
       getTitle: () => "Singleton fixture",
-      isSingleton: () => true,
+      canCopy: () => false,
     };
     pane.addItem(item);
     const before = lumine.workspace.getCenter().getPanes().slice();
     const warning = spyOn(lumine.notifications, "addWarning");
     await lumine.commands.dispatch(barFor(pane).tabForItem(item).itemTitle, "tabs:split-right");
     expect(lumine.workspace.getCenter().getPanes()).toEqual(before);
-    expect(warning).toHaveBeenCalled();
-    expect(warning.calls.mostRecent().args[1].detail).toMatch(/one instance.*cannot be copied/i);
+    expect(warning).not.toHaveBeenCalled();
     expect(pane.getItems()).toContain(item);
   });
 

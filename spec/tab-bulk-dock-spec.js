@@ -4,7 +4,7 @@ describe("bulk tab closing in docks", () => {
   let main, dockPane, permanent, closable, closeSubscription;
 
   const permanentItem = () => ({
-    isSingleton: () => true,
+    canCopy: () => false,
     getAllowedLocations: () => ["center", "left", "right"],
     element: document.createElement("div"),
     getTitle: () => "Permanent Dock Item",

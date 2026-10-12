@@ -9,7 +9,7 @@ describe("tab title groups", () => {
   const addItem = (title, parent) => {
     const emitter = new Emitter();
     const item = {
-      isSingleton: () => true,
+      canCopy: () => false,
       element: document.createElement("div"),
       title,
       getTitle() {

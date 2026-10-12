@@ -396,8 +396,8 @@ describe("TabBarView", () => {
 
     it("emits a warning when ::onDid... functions are not valid Disposables", () => {
       class BadView {
-        isSingleton() {
-          return true;
+        canCopy() {
+          return false;
         }
         constructor() {
           this.element = document.createElement("div");
