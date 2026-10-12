@@ -116,12 +116,21 @@
         "command": "tabs:split-right"
       },
       {
-        "label": "Close Pane",
-        "command": "pane:close"
-      },
-      {
         "type": "separator"
       }
+    ],
+    "lumine-pane:not(lumine-dock lumine-pane) .tab": [
+      { "type": "separator" },
+      { "label": "Detach Tab", "command": "tabs:detach-tab" },
+      { "type": "separator" },
+      { "label": "Detach Pane", "command": "pane:detach" },
+      { "label": "Close Pane", "command": "pane:close" },
+      { "type": "separator" }
+    ],
+    "lumine-dock .tab": [
+      { "type": "separator" },
+      { "label": "Close Pane", "command": "pane:close" },
+      { "type": "separator" }
     ],
     ".tab.texteditor": [
       {

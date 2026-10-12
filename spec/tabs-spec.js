@@ -84,13 +84,14 @@ describe("Tabs package main", () => {
       expect(labels).toContain("Close Tab");
       expect(labels).toContain("Close All Tabs");
       // The four splits are core's own rows, written flat rather than nested.
-      expect(labels.slice(labels.indexOf("Split Up"), labels.indexOf("Split Up") + 5)).toEqual([
+      expect(labels.slice(labels.indexOf("Split Up"), labels.indexOf("Split Up") + 4)).toEqual([
         "Split Up",
         "Split Down",
         "Split Left",
         "Split Right",
-        "Close Pane",
       ]);
+      expect(labels).toContain("Detach Tab");
+      expect(labels[labels.indexOf("Detach Pane") + 1]).toBe("Close Pane");
       // The tab declares Close Pane and the bar's copy is gated out, so the
       // single row is not the label collision `merge` would have hidden.
       expect(labels.filter((label) => label === "Close Pane").length).toBe(1);

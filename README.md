@@ -21,6 +21,7 @@ To install `tabs` search for it in the Install pane of the Lumine settings, or r
 
 Commands available in `lumine-workspace`:
 
+- `tabs:detach-tab`: detach a tab into an additional window of the same workspace,
 - `tabs:open-in-new-window`: move the target tab into a new window,
 - `tabs:split-up`: copy the target tab into a pane above,
 - `tabs:split-down`: copy the target tab into a pane below,

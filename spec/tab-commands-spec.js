@@ -1,7 +1,7 @@
 const path = require("path");
 
 describe("tab command targets", () => {
-  let main, pane, first, active, otherPane, other;
+  let main, pane, first, active, otherPane, other, coreMenus;
 
   beforeEach(async () => {
     main = (await lumine.packages.activatePackage(path.join(__dirname, ".."))).mainModule;
@@ -14,9 +14,52 @@ describe("tab command targets", () => {
     otherPane = pane.splitRight({ items: [other] });
     pane.activate();
     jasmine.attachToDOM(lumine.workspace.getElement());
+    coreMenus = lumine.contextMenu.loadPlatformItems();
   });
 
   const barFor = (targetPane) => main.tabBarViews.get(targetPane);
+
+  afterEach(async () => {
+    coreMenus.dispose();
+    await lumine.workspace.discardEditorWindows();
+  });
+
+  it("detaches the clicked inactive tab without reopening its document", async () => {
+    jasmine.useRealClock();
+    first.setText("untitled edits");
+    const element = first.getElement();
+    const buffer = first.getBuffer();
+    lumine.commands.dispatch(barFor(pane).tabForItem(first).itemTitle, "tabs:detach-tab");
+    await conditionPromise(
+      () => lumine.workspace.paneForItem(first)?.getContainer() !== pane.getContainer(),
+    );
+    const destination = lumine.workspace.paneForItem(first).getContainer().getWindow();
+    expect(destination.isMain()).toBeFalse();
+    expect(first.getElement()).toBe(element);
+    expect(first.getBuffer()).toBe(buffer);
+    expect(first.getText()).toBe("untitled edits");
+    expect(first.isDestroyed()).toBeFalse();
+    expect(pane.getActiveItem()).toBe(active);
+    expect(element.ownerDocument).toBe(destination.getDocument());
+    expect(main.tabBarViews.get(lumine.workspace.paneForItem(first))).toBeDefined();
+  });
+
+  it("places detach operations on tabs and empty panes, with Detach Pane above Close Pane", () => {
+    const commands = (target) =>
+      lumine.contextMenu.templateForElement(target).map((item) => item.command);
+    const tab = barFor(pane).tabForItem(first).element;
+    const tabMenu = commands(tab);
+    expect(tabMenu).toContain("tabs:detach-tab");
+    expect(tabMenu.indexOf("pane:detach") + 1).toBe(tabMenu.indexOf("pane:close"));
+    const backgroundMenu = commands(barFor(pane).element);
+    expect(backgroundMenu.indexOf("pane:detach") + 1).toBe(backgroundMenu.indexOf("pane:close"));
+    const editorMenu = commands(first.getElement());
+    expect(editorMenu).not.toContain("tabs:detach-tab");
+    expect(editorMenu).not.toContain("pane:detach");
+    const emptyPane = pane.splitDown({ activate: false });
+    const paneMenu = commands(emptyPane.getElement().querySelector(".item-views"));
+    expect(paneMenu.indexOf("pane:detach") + 1).toBe(paneMenu.indexOf("pane:close"));
+  });
 
   it("uses the dispatch target without requiring an earlier context click", () => {
     lumine.commands.dispatch(barFor(pane).tabForItem(first).itemTitle, "tabs:close-tab");
