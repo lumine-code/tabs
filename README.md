@@ -7,7 +7,7 @@ Fork of [pulsar-edit/pulsar](https://github.com/pulsar-edit/pulsar) (`packages/t
 ## Features
 
 - **Per-pane tabs**: shows a tab bar with a tab for every open editor and item in each pane.
-- **Tab management**: close a single tab, other tabs, saved tabs, every tab in a pane, or every tab in the window.
+- **Tab management**: close a single tab, other tabs, saved tabs, every tab in a pane, or every tab throughout the workspace.
 - **Split from a tab**: open a second copy of a tab up, down, left, or right in a new pane.
 - **Window transfers**: move a tab into another window while keeping its unsaved text, selections, and scroll position.
 - **File icons**: shows the icon an item names for itself, and a file-type icon when an icon package is installed.
@@ -33,11 +33,11 @@ Commands available in `lumine-workspace`:
 - `tabs:close-tabs-to-left`: close all tabs to the left of the target tab,
 - `tabs:close-saved-tabs`: close all tabs with no unsaved changes,
 - `tabs:close-all-tabs`: close every tab in the pane,
-- `tabs:close-all-tabs-in-workspace`: close every tab in every pane of this window.
+- `tabs:close-all-tabs-in-workspace`: close every tab in every pane across all windows of the workspace.
 
 ## Usage
 
-The Packages → Tabs menu and command palette act on the active tab. A tab's context menu acts on that tab. Close All Tabs closes the target pane's tabs; Close All Tabs in Workspace closes tabs throughout the window. Batch closing visits closable tabs one at a time and stops if a close is refused. Permanent dock tabs stay open.
+The Packages → Tabs menu and command palette act on the active tab. A tab's context menu acts on that tab. Close All Tabs closes the target pane's tabs; Close All Tabs in Workspace closes tabs across all windows of the workspace. Batch closing visits closable tabs one at a time and stops if a close is refused. Permanent dock tabs stay open.
 
 Double-click a tab to toggle its pending preview state, or use `pane:toggle-pending-item` for the active tab. A pending tab is replaced when another item is opened in that pane; double-click it again to keep it open. Marking another tab pending keeps the previous preview open as a permanent tab. Editing or saving a preview makes it permanent.
 
