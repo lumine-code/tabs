@@ -5,7 +5,9 @@
       "submenu": [
         {
           "label": "Open Tab in New Window",
-          "command": "tabs:open-in-new-window"
+          "command": "tabs:open-in-new-window",
+          "group": "external",
+          "order": 40
         },
         {
           "label": "Close Tabs",
@@ -34,7 +36,9 @@
               "label": "All Tabs in Workspace",
               "command": "tabs:close-all-tabs-in-workspace"
             }
-          ]
+          ],
+          "group": "close",
+          "order": 20
         }
       ]
     },
