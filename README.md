@@ -13,6 +13,8 @@ Fork of [pulsar-edit/pulsar](https://github.com/pulsar-edit/pulsar) (`packages/t
 - **File icons**: shows the icon an item names for itself, and a file-type icon when an icon package is installed.
 - **VCS coloring**: color tab file names based on their version control status.
 
+![Switch between open source, project notes and metadata.](.github/demo.png)
+
 ## Installation
 
 To install `tabs` search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/tabs`.

@@ -1,0 +1,16 @@
+{
+  "title": "tabs",
+  "description": "Switch between open source, project notes and metadata.",
+  "recordedOn": "2026-10-13",
+  "sourceRevision": "478fe80acbe0d5823fa95829aa20e74e9a80bff5",
+  "mode": "normal",
+  "fontSettings": "default",
+  "images": [
+    {
+      "file": "demo.png",
+      "label": "Switch between open source, project notes and metadata.",
+      "width": 1200,
+      "height": 760
+    }
+  ]
+}
