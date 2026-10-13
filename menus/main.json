@@ -101,7 +101,8 @@
       // from the pane menu.
       {
         "label": "Split Up",
-        "command": "tabs:split-up"
+        "command": "tabs:split-up",
+        "afterGroupContaining": ["tabs:close-tab"]
       },
       {
         "label": "Split Down",
@@ -121,15 +122,37 @@
     ],
     "lumine-pane:not(lumine-dock lumine-pane) .tab": [
       { "type": "separator" },
-      { "label": "Detach Tab", "command": "tabs:detach-tab" },
+      {
+        "label": "Detach Tab",
+        "command": "tabs:detach-tab",
+        "afterGroupContaining": ["tabs:split-up", "tabs:close-tab"]
+      },
       { "type": "separator" },
-      { "label": "Detach Pane", "command": "pane:detach" },
+      {
+        "label": "Detach Pane",
+        "command": "pane:detach",
+        "afterGroupContaining": [
+          "tabs:detach-tab",
+          "tabs:open-in-new-window",
+          "tabs:split-up",
+          "tabs:close-tab"
+        ]
+      },
       { "label": "Close Pane", "command": "pane:close" },
       { "type": "separator" }
     ],
     "lumine-dock .tab": [
       { "type": "separator" },
-      { "label": "Close Pane", "command": "pane:close" },
+      {
+        "label": "Close Pane",
+        "command": "pane:close",
+        "afterGroupContaining": [
+          "tabs:detach-tab",
+          "tabs:open-in-new-window",
+          "tabs:split-up",
+          "tabs:close-tab"
+        ]
+      },
       { "type": "separator" }
     ],
     ".tab.texteditor": [
@@ -138,7 +161,9 @@
       },
       {
         "label": "Open in New Window",
-        "command": "tabs:open-in-new-window"
+        "command": "tabs:open-in-new-window",
+        "after": ["tabs:detach-tab"],
+        "afterGroupContaining": ["tabs:split-up", "tabs:close-tab"]
       },
       {
         "type": "separator"
@@ -150,7 +175,8 @@
       },
       {
         "label": "Reopen Closed Tab",
-        "command": "pane:reopen-closed-item"
+        "command": "pane:reopen-closed-item",
+        "after": ["tabs:close-all-tabs"]
       },
       {
         "type": "separator"
