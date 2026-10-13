@@ -1,6 +1,44 @@
 {
   "menu": [
     {
+      "label": "File",
+      "submenu": [
+        {
+          "label": "Open Tab in New Window",
+          "command": "tabs:open-in-new-window"
+        },
+        {
+          "label": "Close Tabs",
+          "submenu": [
+            {
+              "label": "Other Tabs",
+              "command": "tabs:close-other-tabs"
+            },
+            {
+              "label": "Tabs to the Right",
+              "command": "tabs:close-tabs-to-right"
+            },
+            {
+              "label": "Tabs to the Left",
+              "command": "tabs:close-tabs-to-left"
+            },
+            {
+              "label": "Saved Tabs",
+              "command": "tabs:close-saved-tabs"
+            },
+            {
+              "label": "All Tabs in Pane",
+              "command": "tabs:close-all-tabs"
+            },
+            {
+              "label": "All Tabs in Workspace",
+              "command": "tabs:close-all-tabs-in-workspace"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "label": "Packages",
       "submenu": [
         {
