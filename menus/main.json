@@ -49,55 +49,62 @@
           "label": "Tabs",
           "submenu": [
             {
-              "label": "Open in New Window",
-              "command": "tabs:open-in-new-window"
-            },
-            {
-              "label": "Split Up",
-              "command": "tabs:split-up"
-            },
-            {
-              "label": "Split Down",
-              "command": "tabs:split-down"
-            },
-            {
-              "label": "Split Left",
-              "command": "tabs:split-left"
-            },
-            {
-              "label": "Split Right",
-              "command": "tabs:split-right"
-            },
-            {
-              "type": "separator"
-            },
-            {
               "label": "Close Tab",
               "command": "tabs:close-tab"
             },
             {
-              "label": "Close Other Tabs",
-              "command": "tabs:close-other-tabs"
+              "label": "Split Tab",
+              "submenu": [
+                {
+                  "label": "Above",
+                  "command": "tabs:split-up"
+                },
+                {
+                  "label": "Below",
+                  "command": "tabs:split-down"
+                },
+                {
+                  "label": "Left",
+                  "command": "tabs:split-left"
+                },
+                {
+                  "label": "Right",
+                  "command": "tabs:split-right"
+                }
+              ]
             },
             {
-              "label": "Close Tabs to the Right",
-              "command": "tabs:close-tabs-to-right"
+              "label": "Move Tab to New Window",
+              "command": "tabs:open-in-new-window"
             },
             {
-              "label": "Close Tabs to the Left",
-              "command": "tabs:close-tabs-to-left"
-            },
-            {
-              "label": "Close Saved Tabs",
-              "command": "tabs:close-saved-tabs"
-            },
-            {
-              "label": "Close All Tabs",
-              "command": "tabs:close-all-tabs"
-            },
-            {
-              "label": "Close All Tabs in Workspace",
-              "command": "tabs:close-all-tabs-in-workspace"
+              "label": "Close Tabs",
+              "submenu": [
+                {
+                  "label": "Other Tabs in Pane",
+                  "command": "tabs:close-other-tabs"
+                },
+                {
+                  "label": "Tabs to the Right",
+                  "command": "tabs:close-tabs-to-right"
+                },
+                {
+                  "label": "Tabs to the Left",
+                  "command": "tabs:close-tabs-to-left"
+                },
+                {
+                  "label": "Unmodified Tabs in Pane",
+                  "command": "tabs:close-saved-tabs"
+                },
+                {
+                  "label": "All Tabs in Pane",
+                  "command": "tabs:close-all-tabs"
+                },
+                {
+                  "label": "All Tabs in Workspace",
+                  "command": "tabs:close-all-tabs-in-workspace"
+                }
+              ]
             }
           ]
         }
