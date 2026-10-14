@@ -1,4 +1,5 @@
 const path = require("node:path");
+const { createRequire } = require("node:module");
 
 describe("tab action runtime bootstrap", () => {
   let main;
@@ -37,5 +38,30 @@ describe("tab action runtime bootstrap", () => {
     expect(editor.isDestroyed()).toBe(true);
     expect(loaded()).toBe(true);
     expect(bar.closeTab).toBe(close);
+  });
+
+  it("uses one bootstrap module while preserving compatibility constructor identities", async () => {
+    const editor = await lumine.workspace.open();
+    const bar = main.tabBarViews.get(lumine.workspace.paneForItem(editor));
+    for (const file of ["tab-title-manager.js", "tab-bar-layout.js", "tab-bar-interaction.js"]) {
+      expect(
+        Object.values(require.cache).some(
+          (entry) => entry?.filename === path.join(__dirname, "../lib", file),
+        ),
+      ).toBe(false);
+    }
+    const pack = lumine.packages.getActivePackage("tabs");
+    const currentRequire = createRequire(path.join(pack.path, "package.json"));
+    expect(bar.titleManager.constructor).toBe(currentRequire("./lib/tab-title-manager.js"));
+    expect(bar.layout.constructor).toBe(currentRequire("./lib/tab-bar-layout.js"));
+    expect(bar.interaction.constructor).toBe(currentRequire("./lib/tab-bar-interaction.js"));
+    const previous = bar.interaction.constructor;
+    await lumine.packages.unloadPackage("tabs");
+    const current = await lumine.packages.activatePackage("tabs");
+    main = current.mainModule;
+    const nextBar = main.tabBarViews.get(lumine.workspace.paneForItem(editor));
+    const nextRequire = createRequire(path.join(current.path, "package.json"));
+    expect(nextBar.interaction.constructor).not.toBe(previous);
+    expect(nextBar.interaction.constructor).toBe(nextRequire("./lib/tab-bar-interaction.js"));
   });
 });
