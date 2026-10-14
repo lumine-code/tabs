@@ -2,6 +2,38 @@ const fs = require("fs");
 const path = require("path");
 
 describe("Tab persistence-marker CSS roles", () => {
+  it("swaps persistence markers for the close button when pointer tracking recovers hover", () => {
+    const sheet = lumine.styles.addStyleSheet(
+      fs.readFileSync(path.join(__dirname, "../styles/main.css"), "utf8"),
+      { priority: 1000 },
+    );
+    const bar = document.createElement("ul");
+    bar.className = "tab-bar";
+    const tab = document.createElement("li");
+    tab.className = "tab active";
+    tab.style.pointerEvents = "none";
+    tab.innerHTML = '<span class="tab-status"></span><span class="close-icon"></span>';
+    bar.appendChild(tab);
+    jasmine.attachToDOM(bar);
+    try {
+      expect(tab.matches(":hover")).toBe(false);
+      for (const state of ["modified", "conflicted", "removed"]) {
+        tab.dataset.fileState = state;
+        const marker = tab.querySelector(".tab-status");
+        const close = tab.querySelector(".close-icon");
+        expect(getComputedStyle(marker).display).toBe("flex");
+        expect(getComputedStyle(close).visibility).toBe("hidden");
+        tab.classList.add("is-hovered");
+        expect(getComputedStyle(marker).display).toBe("none");
+        expect(getComputedStyle(close).visibility).toBe("visible");
+        tab.classList.remove("is-hovered");
+      }
+    } finally {
+      bar.remove();
+      sheet.dispose();
+    }
+  });
+
   it("keeps disk-state markers independent from Git title colors", () => {
     const sheets = [
       lumine.styles.addStyleSheet(
