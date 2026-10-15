@@ -272,7 +272,12 @@ describe("tab activation across panes", () => {
     }
   });
 
-  for (const gesture of ["close", "middle", "context", "ctrl-context"]) {
+  for (const gesture of [
+    "close",
+    "middle",
+    "context",
+    ...(process.platform === "darwin" ? ["ctrl-context"] : []),
+  ]) {
     it(`keeps the existing selection during a ${gesture} gesture on another tab`, async () => {
       const tab = bar.tabForItem(chosenEditor);
       const target = gesture === "close" ? tab.element.querySelector(".close-icon") : tab.itemTitle;

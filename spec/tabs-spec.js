@@ -586,17 +586,10 @@ describe("TabBarView", () => {
       expect(click.preventDefault).toHaveBeenCalled();
     });
 
-    it("doesn't switch tab when right (or ctrl-left) clicked", () => {
+    it("doesn't switch tab when right clicked", () => {
       spyOn(pane, "activate");
 
-      let { mousedown } = triggerClickEvent(tabBar.tabAtIndex(0).element, { button: 2 });
-      expect(pane.getActiveItem()).not.toBe(pane.getItems()[0]);
-      expect(mousedown.preventDefault).toHaveBeenCalled();
-
-      ({ mousedown } = triggerClickEvent(tabBar.tabAtIndex(0).element, {
-        button: 0,
-        ctrlKey: true,
-      }));
+      const { mousedown } = triggerClickEvent(tabBar.tabAtIndex(0).element, { button: 2 });
       expect(pane.getActiveItem()).not.toBe(pane.getItems()[0]);
       expect(mousedown.preventDefault).toHaveBeenCalled();
 
@@ -604,6 +597,24 @@ describe("TabBarView", () => {
       // because of the mouse click
       expect(pane.activate).toHaveBeenCalled();
     });
+
+    for (const platform of ["win32", "linux", "darwin"]) {
+      it(`treats Ctrl-click as contextual only on macOS (${platform})`, () => {
+        const descriptor = Object.getOwnPropertyDescriptor(process, "platform");
+        Object.defineProperty(process, "platform", { ...descriptor, value: platform });
+        try {
+          const { mousedown } = triggerClickEvent(tabBar.tabAtIndex(0).element, {
+            button: 0,
+            ctrlKey: true,
+          });
+          expect(pane.getActiveItem() === pane.getItems()[0]).toBe(platform !== "darwin");
+          if (platform === "darwin") expect(mousedown.preventDefault).toHaveBeenCalled();
+          else expect(mousedown.preventDefault).not.toHaveBeenCalled();
+        } finally {
+          Object.defineProperty(process, "platform", descriptor);
+        }
+      });
+    }
   });
 
   describe("when a tab's close icon is clicked", () =>
@@ -1467,7 +1478,8 @@ describe("TabBarView", () => {
           const tab = tabBar.tabForItem(editor);
 
           triggerMouseEvent("dblclick", tab.element.querySelector(".close-icon"));
-          triggerMouseEvent("dblclick", tab.element, { button: 0, ctrlKey: true });
+          if (process.platform === "darwin")
+            triggerMouseEvent("dblclick", tab.element, { button: 0, ctrlKey: true });
           triggerMouseEvent("dblclick", tab.element, { button: 1 });
           triggerMouseEvent("dblclick", tab.element, { button: 2 });
 
