@@ -4,7 +4,7 @@
       "label": "File",
       "submenu": [
         {
-          "label": "Open Tab in New Window",
+          "label": "Move Tab to New Window",
           "command": "tabs:open-in-new-window",
           "group": "external",
           "order": 40
@@ -13,7 +13,7 @@
           "label": "Close Tabs",
           "submenu": [
             {
-              "label": "Other Tabs",
+              "label": "Other Tabs in Pane",
               "command": "tabs:close-other-tabs"
             },
             {
@@ -25,7 +25,7 @@
               "command": "tabs:close-tabs-to-left"
             },
             {
-              "label": "Saved Tabs",
+              "label": "Unmodified Tabs in Pane",
               "command": "tabs:close-saved-tabs"
             },
             {
@@ -112,69 +112,94 @@
     }
   ],
   "context-menu": {
-    ".tab": [
-      {
-        "type": "separator"
-      },
-      {
-        "label": "Close Tab",
-        "command": "tabs:close-tab"
-      },
-      {
-        "label": "Close Other Tabs",
-        "command": "tabs:close-other-tabs"
-      },
-      {
-        "label": "Close Tabs to the Right",
-        "command": "tabs:close-tabs-to-right"
-      },
-      {
-        "label": "Close Tabs to the Left",
-        "command": "tabs:close-tabs-to-left"
-      },
-      {
-        "label": "Close Saved Tabs",
-        "command": "tabs:close-saved-tabs"
-      },
-      {
-        "label": "Close All Tabs",
-        "command": "tabs:close-all-tabs"
-      },
-      {
-        "type": "separator"
-      },
-      // Core's own pane group, in core's order and under core's labels: the
-      // tab bar is a sibling of `.item-views`, never a descendant, so core's
-      // block cannot reach this menu and nothing here collides with it. A
-      // submenu would only make the user hunt for four rows they already know
-      // from the pane menu.
-      {
-        "label": "Split Up",
-        "command": "tabs:split-up",
-        "afterGroupContaining": ["tabs:close-tab"]
-      },
-      {
-        "label": "Split Down",
-        "command": "tabs:split-down"
-      },
-      {
-        "label": "Split Left",
-        "command": "tabs:split-left"
-      },
-      {
-        "label": "Split Right",
-        "command": "tabs:split-right"
-      },
-      {
-        "type": "separator"
-      }
-    ],
+    ".tab": {
+      "groupOrder": ["views", "history", "layout", "transfer", "extensions", "close", "visibility"],
+      "items": [
+        {
+          "type": "separator"
+        },
+        {
+          "label": "Close Tab",
+          "command": "tabs:close-tab",
+          "group": "close",
+          "order": 10
+        },
+        {
+          "label": "Close Other Tabs",
+          "command": "tabs:close-other-tabs",
+          "group": "close",
+          "order": 20
+        },
+        {
+          "label": "Close Tabs to the Right",
+          "command": "tabs:close-tabs-to-right",
+          "group": "close",
+          "order": 30
+        },
+        {
+          "label": "Close Tabs to the Left",
+          "command": "tabs:close-tabs-to-left",
+          "group": "close",
+          "order": 40
+        },
+        {
+          "label": "Close Unmodified Tabs in Pane",
+          "command": "tabs:close-saved-tabs",
+          "group": "close",
+          "order": 50
+        },
+        {
+          "label": "Close All Tabs in Pane",
+          "command": "tabs:close-all-tabs",
+          "group": "close",
+          "order": 60
+        },
+        {
+          "type": "separator"
+        },
+        // Core's own pane group, in core's order and under core's labels: the
+        // tab bar is a sibling of `.item-views`, never a descendant, so core's
+        // block cannot reach this menu and nothing here collides with it. A
+        // submenu would only make the user hunt for four rows they already know
+        // from the pane menu.
+        {
+          "label": "Split Up",
+          "command": "tabs:split-up",
+          "afterGroupContaining": ["tabs:close-tab"],
+          "group": "layout",
+          "order": 10
+        },
+        {
+          "label": "Split Down",
+          "command": "tabs:split-down",
+          "group": "layout",
+          "order": 20
+        },
+        {
+          "label": "Split Left",
+          "command": "tabs:split-left",
+          "group": "layout",
+          "order": 30
+        },
+        {
+          "label": "Split Right",
+          "command": "tabs:split-right",
+          "group": "layout",
+          "order": 40
+        },
+        {
+          "type": "separator"
+        }
+      ]
+    },
     "lumine-pane:not(lumine-dock lumine-pane) .tab": [
       { "type": "separator" },
       {
         "label": "Detach Tab",
         "command": "tabs:detach-tab",
-        "afterGroupContaining": ["tabs:split-up", "tabs:close-tab"]
+        "afterGroupContaining": ["tabs:split-up", "tabs:close-tab"],
+        "group": "transfer",
+        "order": 10
       },
       { "type": "separator" },
       {
@@ -185,9 +210,16 @@
           "tabs:open-in-new-window",
           "tabs:split-up",
           "tabs:close-tab"
-        ]
+        ],
+        "group": "transfer",
+        "order": 30
       },
-      { "label": "Close Pane", "command": "pane:close" },
+      {
+        "label": "Close Pane",
+        "command": "pane:close",
+        "group": "close",
+        "order": 90
+      },
       { "type": "separator" }
     ],
     "lumine-dock .tab": [
@@ -200,7 +232,9 @@
           "tabs:open-in-new-window",
           "tabs:split-up",
           "tabs:close-tab"
-        ]
+        ],
+        "group": "close",
+        "order": 90
       },
       { "type": "separator" }
     ],
@@ -209,35 +243,44 @@
         "type": "separator"
       },
       {
-        "label": "Open in New Window",
+        "label": "Move Tab to New Window",
         "command": "tabs:open-in-new-window",
         "after": ["tabs:detach-tab"],
-        "afterGroupContaining": ["tabs:split-up", "tabs:close-tab"]
+        "afterGroupContaining": ["tabs:split-up", "tabs:close-tab"],
+        "group": "transfer",
+        "order": 20
       },
       {
         "type": "separator"
       }
     ],
-    ".tab-bar": [
-      {
-        "type": "separator"
-      },
-      {
-        "label": "Reopen Closed Tab",
-        "command": "pane:reopen-closed-item",
-        "after": ["tabs:close-all-tabs"]
-      },
-      {
-        "type": "separator"
-      }
-    ],
+    ".tab-bar": {
+      "groupOrder": ["views", "history", "layout", "transfer", "extensions", "close", "visibility"],
+      "items": [
+        {
+          "type": "separator"
+        },
+        {
+          "label": "Reopen Closed Tab",
+          "command": "pane:reopen-closed-item",
+          "after": ["tabs:close-all-tabs"],
+          "group": "history",
+          "order": 10
+        },
+        {
+          "type": "separator"
+        }
+      ]
+    },
     "lumine-dock .tab-bar": [
       {
         "type": "separator"
       },
       {
         "label": "Hide Dock",
-        "command": "dock:hide"
+        "command": "dock:hide",
+        "group": "visibility",
+        "order": 10
       },
       {
         "type": "separator"

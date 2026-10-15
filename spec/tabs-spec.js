@@ -71,18 +71,18 @@ describe("Tabs package main", () => {
     it("offers the pane-wide items on the bar's empty space", () => {
       const labels = labelsFor(tabBarElement);
       expect(labels).toContain("Reopen Closed Tab");
-      expect(labels).toContain("Close Saved Tabs");
-      expect(labels).toContain("Close All Tabs");
+      expect(labels).toContain("Close Unmodified Tabs in Pane");
+      expect(labels).toContain("Close All Tabs in Pane");
       expect(labels).toContain("Close Pane");
       // Nothing out there names a tab, so the tab's own items stay out.
       expect(labels).not.toContain("Close Tab");
       expect(labels).not.toContain("Split Up");
     });
 
-    it("offers the tab's own items on a tab, with one Close Pane between them", () => {
+    it("offers the tab's own items on a tab, with one Close Pane after the tab actions", () => {
       const labels = labelsFor(tabBarElement.querySelector(".tab"));
       expect(labels).toContain("Close Tab");
-      expect(labels).toContain("Close All Tabs");
+      expect(labels).toContain("Close All Tabs in Pane");
       // The four splits are core's own rows, written flat rather than nested.
       expect(labels.slice(labels.indexOf("Split Up"), labels.indexOf("Split Up") + 4)).toEqual([
         "Split Up",
@@ -91,7 +91,7 @@ describe("Tabs package main", () => {
         "Split Right",
       ]);
       expect(labels).toContain("Detach Tab");
-      expect(labels[labels.indexOf("Detach Pane") + 1]).toBe("Close Pane");
+      expect(labels.indexOf("Close Pane")).toBeGreaterThan(labels.indexOf("Detach Pane"));
       // The tab declares Close Pane and the bar's copy is gated out, so the
       // single row is not the label collision `merge` would have hidden.
       expect(labels.filter((label) => label === "Close Pane").length).toBe(1);
