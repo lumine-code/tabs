@@ -50,9 +50,17 @@ describe("tab command targets", () => {
     const tab = barFor(pane).tabForItem(first).element;
     const tabMenu = commands(tab);
     expect(tabMenu).toContain("tabs:detach-tab");
-    expect(tabMenu.indexOf("pane:detach") + 1).toBe(tabMenu.indexOf("pane:close"));
+    expect(tabMenu).toContain("pane:detach");
+    expect(tabMenu).toContain("pane:close");
+    expect(tabMenu.indexOf("pane:detach")).toBeLessThan(tabMenu.indexOf("pane:close"));
+    expect(tabMenu.filter(Boolean).at(-1)).toBe("pane:close");
     const backgroundMenu = commands(barFor(pane).element);
-    expect(backgroundMenu.indexOf("pane:detach") + 1).toBe(backgroundMenu.indexOf("pane:close"));
+    expect(backgroundMenu).toContain("pane:detach");
+    expect(backgroundMenu).toContain("pane:close");
+    expect(backgroundMenu.indexOf("pane:detach")).toBeLessThan(
+      backgroundMenu.indexOf("pane:close"),
+    );
+    expect(backgroundMenu.filter(Boolean).at(-1)).toBe("pane:close");
     const editorMenu = commands(first.getElement());
     expect(editorMenu).not.toContain("tabs:detach-tab");
     expect(editorMenu).not.toContain("pane:detach");
