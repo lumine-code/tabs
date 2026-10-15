@@ -6,8 +6,8 @@
         {
           "label": "Move Tab to New Window",
           "command": "tabs:open-in-new-window",
-          "group": "external",
-          "order": 40
+          "group": "new",
+          "order": 60
         },
         {
           "label": "Close Tabs",
