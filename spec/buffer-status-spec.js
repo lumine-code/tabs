@@ -63,16 +63,23 @@ describe("tab titles with unsaved buffers", () => {
     expect(tab.itemTitle).toHaveClass("status-modified");
   });
 
-  it("keeps unsaved coloring when repository discovery finishes without a repository", async () => {
+  it("removes Git coloring when discovery confirms the dirty file has no repository", async () => {
     editor.insertText("changed");
     await tab.setupVcsStatus();
-    expect(tab.itemTitle).toHaveClass("status-modified");
+    expect(tab.itemTitle).not.toHaveClass("status-modified");
+    expect(tab.element.dataset.fileState).toBe("modified");
   });
 
   it("colors both tabs sharing a buffer and clears both after undo", async () => {
     const pane = lumine.workspace.paneForItem(editor).splitRight({ items: [editor.copy()] });
     await conditionPromise(() => pane.getElement().querySelector(".tab .title"));
     const otherTitle = pane.getElement().querySelector(".tab .title");
+    const main = lumine.packages.getActivePackage("tabs").mainModule;
+    const otherTab = [...main.tabBarViews.values()]
+      .find((bar) => bar.pane === pane)
+      .tabForItem(pane.getActiveItem());
+    await otherTab.setupVcsStatus();
+    otherTab.updateVcsStatus(repository);
     editor.insertText("changed");
     expect(tab.itemTitle).toHaveClass("status-modified");
     expect(otherTitle).toHaveClass("status-modified");
@@ -83,10 +90,23 @@ describe("tab titles with unsaved buffers", () => {
   });
 
   it("clears the unsaved title when saving outside Git", async () => {
+    tab.unsetVcsStatus();
     editor.insertText("changed");
+    expect(tab.itemTitle).not.toHaveClass("status-modified");
     await editor.save();
     expect(tab.itemTitle).not.toHaveClass("status-modified");
     expect(tab.element.dataset.fileState).toBe("unmodified");
+  });
+
+  it("keeps a dirty file neutral until the first Git snapshot is ready", async () => {
+    tab.unsetVcsStatus();
+    editor.insertText("changed");
+    repository.getStatusSnapshot = () => ({ initialized: false });
+    tab.updateVcsStatus(repository);
+    expect(tab.itemTitle).not.toHaveClass("status-modified");
+    repository.getStatusSnapshot = () => ({ initialized: true, includesIgnored: true });
+    tab.updateVcsStatus(repository);
+    expect(tab.itemTitle).toHaveClass("status-modified");
   });
 
   for (const status of ["added", "modified"]) {
