@@ -144,6 +144,31 @@ describe("tab command targets", () => {
     expect(pane.getItems()).toContain(item);
   });
 
+  it("checks the clicked tab's capabilities without copying or serializing it", () => {
+    const target = barFor(pane).tabForItem(first).itemTitle;
+    const copy = spyOn(first, "copy").and.callThrough();
+    const text = spyOn(first, "getText").and.callThrough();
+    first.canCopy = () => false;
+    expect(lumine.commands.canDispatch(target, "tabs:split-right")).toBeFalse();
+    expect(lumine.commands.canDispatch(active.element, "tabs:split-right")).toBeTrue();
+    expect(lumine.commands.canDispatch(target, "tabs:open-in-new-window")).toBeTrue();
+    expect(lumine.commands.canDispatch(target, "tabs:detach-tab")).toBeTrue();
+    expect(copy).not.toHaveBeenCalled();
+    expect(text).not.toHaveBeenCalled();
+  });
+
+  it("disables tab actions in an empty pane", () => {
+    const empty = pane.splitDown({ activate: false });
+    for (const name of [
+      "close-tab",
+      "close-all-tabs",
+      "split-right",
+      "detach-tab",
+      "open-in-new-window",
+    ])
+      expect(lumine.commands.canDispatch(empty.element, `tabs:${name}`)).toBeFalse();
+  });
+
   it("cancels a delayed copy when the clicked source closes and destroys the late result", async () => {
     let finish;
     const pending = new Promise((resolve) => {

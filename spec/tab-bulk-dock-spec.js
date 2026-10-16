@@ -30,6 +30,19 @@ describe("bulk tab closing in docks", () => {
     expect(closable.isDestroyed()).toBe(true);
   });
 
+  it("disables permanent dock closing and moves unsupported by a dock item", () => {
+    jasmine.attachToDOM(lumine.workspace.getElement());
+    const bar = main.tabBarViews.get(dockPane);
+    const target = bar.tabForItem(permanent).itemTitle;
+    expect(lumine.commands.canDispatch(target, "tabs:close-tab")).toBeFalse();
+    expect(lumine.commands.canDispatch(target, "tabs:close-all-tabs")).toBeTrue();
+    expect(lumine.commands.canDispatch(target, "tabs:detach-tab")).toBeFalse();
+    expect(lumine.commands.canDispatch(target, "tabs:open-in-new-window")).toBeFalse();
+    expect(
+      lumine.commands.canDispatch(bar.tabForItem(closable).itemTitle, "tabs:open-in-new-window"),
+    ).toBeFalse();
+  });
+
   it("continues through later docks when closing every tab in the workspace", async () => {
     const rightPane = lumine.workspace.getRightDock().getActivePane();
     const rightItem = lumine.workspace.buildTextEditor();

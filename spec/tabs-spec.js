@@ -1137,6 +1137,7 @@ describe("TabBarView", () => {
       });
 
       it("uses the active tab when dispatched from the palette", () => {
+        item2.pathURI = "fixture://active-transferable-item";
         lumine.commands.dispatch(pane.getElement(), "tabs:open-in-new-window");
         expect(transferScope.openInNewWindow).toHaveBeenCalledOnceWith(pane, item2);
       });
