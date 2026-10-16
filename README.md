@@ -11,7 +11,7 @@ Fork of [pulsar-edit/pulsar](https://github.com/pulsar-edit/pulsar) (`packages/t
 - **Split from a tab**: open a second copy of a tab up, down, left, or right in a new pane.
 - **Window transfers**: move a tab into another window while keeping its unsaved text, selections, and scroll position.
 - **File icons**: shows the icon an item names for itself, and a file-type icon when an icon package is installed.
-- **VCS coloring**: color tab file names based on their version control status.
+- **File status coloring**: color tab file names from Git status and unsaved buffer changes, including undo before saving.
 
 ![Switch between open source, project notes and metadata.](.github/demo.png)
 
