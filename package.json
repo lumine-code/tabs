@@ -80,8 +80,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@lumine-code/fs-temp": "github:lumine-code/fs-temp#cbf61d6ffbee6559902c566a7676b8fbcbe38ece",
-    "@lumine-code/underscore-plus": "github:lumine-code/underscore-plus#0c933a50bb5dcf1c0d0eba022f9a9f382a8c8d66",
+    "@lumine-code/fs-temp": "github:lumine-code/fs-temp#49c48134ee6e25f8fa2391b41d2151c8f24e3ca2",
+    "@lumine-code/underscore-plus": "github:lumine-code/underscore-plus#649efa71eda93df22e2e5cb61a22d65fb17654b1",
     "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-n": "^18.4.1",
