@@ -4,12 +4,6 @@
       "label": "File",
       "submenu": [
         {
-          "label": "Move Tab to New Window",
-          "command": "tabs:open-in-new-window",
-          "group": "new",
-          "order": 60
-        },
-        {
           "label": "Close Tabs",
           "submenu": [
             {
@@ -39,6 +33,22 @@
           ],
           "group": "close",
           "order": 20
+        }
+      ]
+    },
+    {
+      "label": "App",
+      "submenu": [
+        {
+          "label": "Windows",
+          "submenu": [
+            {
+              "label": "Move Current Tab to New Window",
+              "command": "tabs:open-in-new-window",
+              "group": "transfer",
+              "order": 10
+            }
+          ]
         }
       ]
     },
