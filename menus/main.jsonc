@@ -37,17 +37,6 @@
       ]
     },
     {
-      "label": "App",
-      "submenu": [
-        {
-          "label": "Move Current Tab to New Window",
-          "command": "tabs:open-in-new-window",
-          "group": "windows",
-          "order": 30
-        }
-      ]
-    },
-    {
       "label": "Packages",
       "submenu": [
         {
