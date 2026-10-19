@@ -26,9 +26,14 @@ describe("tab titles with unsaved buffers", () => {
     tab.updateVcsStatus(repository);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     editor?.destroy();
-    fs.rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
+    await fs.promises.rm(directory, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 50,
+    });
   });
 
   it("colors an edit before saving and clears the color after undo", async () => {
