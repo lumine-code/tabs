@@ -68,6 +68,14 @@
               ]
             },
             {
+              "label": "Move Tab Left",
+              "command": "tabs:move-tab-left"
+            },
+            {
+              "label": "Move Tab Right",
+              "command": "tabs:move-tab-right"
+            },
+            {
               "label": "Move Tab to New Window",
               "command": "tabs:open-in-new-window"
             },
@@ -180,6 +188,18 @@
           "command": "tabs:split-right",
           "group": "layout",
           "order": 40
+        },
+        {
+          "label": "Move Tab Left",
+          "command": "tabs:move-tab-left",
+          "group": "layout",
+          "order": 50
+        },
+        {
+          "label": "Move Tab Right",
+          "command": "tabs:move-tab-right",
+          "group": "layout",
+          "order": 60
         },
         {
           "type": "separator"

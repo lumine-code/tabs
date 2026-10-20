@@ -8,6 +8,7 @@ Fork of [pulsar-edit/pulsar](https://github.com/pulsar-edit/pulsar) (`packages/t
 
 - **Per-pane tabs**: shows a tab bar with a tab for every open editor and item in each pane.
 - **Tab management**: close a single tab, other tabs, saved tabs, every tab in a pane, or every tab throughout the workspace.
+- **Tab ordering**: move a tab one position left or right within its pane.
 - **Split from a tab**: open a second copy of a tab up, down, left, or right in a new pane.
 - **Window transfers**: move a tab into another window while keeping its unsaved text, selections, and scroll position.
 - **File icons**: shows the icon an item names for itself, and a file-type icon when an icon package is installed.
@@ -23,6 +24,8 @@ To install `tabs` search for it in the Install pane of the Lumine settings, or r
 
 Commands available in `lumine-workspace`:
 
+- `tabs:move-tab-left`: move the target tab one position to the left,
+- `tabs:move-tab-right`: move the target tab one position to the right,
 - `tabs:detach-tab`: detach a tab into an additional window of the same workspace,
 - `tabs:open-in-new-window`: move the target tab into a new window,
 - `tabs:split-up`: copy the target tab into a pane above,
@@ -40,6 +43,8 @@ Commands available in `lumine-workspace`:
 ## Usage
 
 The Packages → Tabs menu and command palette act on the active tab. A tab's context menu acts on that tab. Close All Tabs closes the target pane's tabs; Close All Tabs in Workspace closes tabs across all windows of the workspace. Batch closing visits closable tabs one at a time and stops if a close is refused. Permanent dock tabs stay open.
+
+Moving a tab keeps it in the same pane and preserves the selected tab. A tab at the edge cannot move farther in that direction.
 
 Double-click a tab to toggle its pending preview state, or use `pane:toggle-pending-item` for the active tab. A pending tab is replaced when another item is opened in that pane; double-click it again to keep it open. Marking another tab pending keeps the previous preview open as a permanent tab. Editing or saving a preview makes it permanent.
 

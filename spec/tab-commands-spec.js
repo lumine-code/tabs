@@ -86,6 +86,100 @@ describe("tab command targets", () => {
     expect(pane.getItems()).toEqual([first, active]);
   });
 
+  describe("tab reordering", () => {
+    const expectOrder = (targetPane, items) => {
+      const bar = barFor(targetPane);
+      expect(targetPane.getItems()).toEqual(items);
+      expect(Array.from(bar.element.children)).toEqual(
+        items.map((item) => bar.tabForItem(item).element),
+      );
+    };
+
+    it("moves the active editor one place and keeps its tab selected", () => {
+      const last = lumine.workspace.buildTextEditor();
+      pane.addItem(last);
+      const invalidate = spyOn(lumine.commands, "invalidateAvailability").and.callThrough();
+      lumine.commands.dispatch(active.getElement(), "tabs:move-tab-left");
+      expectOrder(pane, [active, first, last]);
+      expect(invalidate).toHaveBeenCalled();
+      invalidate.calls.reset();
+      lumine.commands.dispatch(active.getElement(), "tabs:move-tab-right");
+      expectOrder(pane, [first, active, last]);
+      expect(invalidate).toHaveBeenCalled();
+      expect(pane.getActiveItem()).toBe(active);
+      expect(barFor(pane).getActiveTab().element.classList.contains("active")).toBeTrue();
+      expect(otherPane.getItems()).toEqual([other]);
+    });
+
+    it("reorders a clicked inactive tab without selecting it", () => {
+      const target = barFor(pane).tabForItem(first).itemTitle;
+      lumine.commands.dispatch(target, "tabs:move-tab-right");
+      expectOrder(pane, [active, first]);
+      expect(pane.getActiveItem()).toBe(active);
+      lumine.commands.dispatch(target, "tabs:move-tab-left");
+      expectOrder(pane, [first, active]);
+      expect(pane.getActiveItem()).toBe(active);
+      expect(lumine.workspace.getActivePane()).toBe(pane);
+    });
+
+    it("uses the target pane even when a different pane is active", () => {
+      const neighbor = lumine.workspace.buildTextEditor();
+      otherPane.addItem(neighbor);
+      otherPane.activateItem(other);
+      pane.activate();
+      lumine.commands.dispatch(other.getElement(), "tabs:move-tab-right");
+      expectOrder(otherPane, [neighbor, other]);
+      lumine.commands.dispatch(otherPane.getElement(), "tabs:move-tab-left");
+      expectOrder(otherPane, [other, neighbor]);
+      expect(otherPane.getActiveItem()).toBe(other);
+      expectOrder(pane, [first, active]);
+      expect(lumine.workspace.getActivePane()).toBe(pane);
+    });
+
+    it("disables moves at either edge without wrapping or changing empty panes", () => {
+      const left = barFor(pane).tabForItem(first).itemTitle;
+      const right = barFor(pane).tabForItem(active).itemTitle;
+      expect(lumine.commands.canDispatch(left, "tabs:move-tab-left")).toBeFalse();
+      expect(lumine.commands.canDispatch(left, "tabs:move-tab-right")).toBeTrue();
+      expect(lumine.commands.canDispatch(right, "tabs:move-tab-left")).toBeTrue();
+      expect(lumine.commands.canDispatch(right, "tabs:move-tab-right")).toBeFalse();
+      lumine.commands.dispatch(left, "tabs:move-tab-left");
+      lumine.commands.dispatch(right, "tabs:move-tab-right");
+      expectOrder(pane, [first, active]);
+
+      const empty = pane.splitDown({ activate: false });
+      for (const targetPane of [empty, otherPane]) {
+        const items = targetPane.getItems().slice();
+        for (const direction of ["left", "right"]) {
+          const command = `tabs:move-tab-${direction}`;
+          expect(lumine.commands.canDispatch(targetPane.getElement(), command)).toBeFalse();
+          lumine.commands.dispatch(targetPane.getElement(), command);
+        }
+        expectOrder(targetPane, items);
+      }
+    });
+
+    it("handles Ctrl+Alt+PageUp and PageDown from editor and tab targets", () => {
+      active.getElement().focus();
+      const press = (key, target) =>
+        lumine.keymaps.handleKeyboardEvent(
+          lumine.keymaps.constructor.buildKeydownEvent(key, {
+            ctrl: true,
+            alt: true,
+            target,
+          }),
+        );
+      press("pageup", document.activeElement);
+      expectOrder(pane, [active, first]);
+      press("pagedown", document.activeElement);
+      expectOrder(pane, [first, active]);
+      press("pagedown", barFor(pane).tabForItem(first).itemTitle);
+      expectOrder(pane, [active, first]);
+      expect(pane.getActiveItem()).toBe(active);
+      expect(document.activeElement.closest("lumine-text-editor")).toBe(active.getElement());
+    });
+  });
+
   it("closes only the active pane when dispatched from the workspace", async () => {
     lumine.commands.dispatch(lumine.workspace.getElement(), "tabs:close-all-tabs");
     await conditionPromise(() => pane.getItems().length === 0);
