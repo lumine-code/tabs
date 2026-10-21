@@ -159,13 +159,13 @@ describe("tab command targets", () => {
       }
     });
 
-    it("handles Ctrl+Alt+PageUp and PageDown from editor and tab targets", () => {
+    it("keeps core tab reordering available from the active editor", () => {
       active.getElement().focus();
       const press = (key, target) =>
         lumine.keymaps.handleKeyboardEvent(
           lumine.keymaps.constructor.buildKeydownEvent(key, {
             ctrl: true,
-            alt: true,
+            shift: true,
             target,
           }),
         );
@@ -173,8 +173,6 @@ describe("tab command targets", () => {
       expectOrder(pane, [active, first]);
       press("pagedown", document.activeElement);
       expectOrder(pane, [first, active]);
-      press("pagedown", barFor(pane).tabForItem(first).itemTitle);
-      expectOrder(pane, [active, first]);
       expect(pane.getActiveItem()).toBe(active);
       expect(document.activeElement.closest("lumine-text-editor")).toBe(active.getElement());
     });

@@ -1,6 +1,0 @@
-{
-  "lumine-pane": {
-    "ctrl-alt-pageup": "tabs:move-tab-left",
-    "ctrl-alt-pagedown": "tabs:move-tab-right"
-  }
-}
