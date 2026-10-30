@@ -40,23 +40,14 @@
       &.icon:before {
         display: none;
       }
+
+      > .icon-glyph,
+      > .icon-letter-glyph {
+        display: none;
+      }
     }
 
     .close-icon {
-      /* Expanded Less mixin `.octicon(x, @close-icon-size)` */
-      &::before {
-        font-family: "Octicons Regular";
-        font-weight: normal;
-        font-style: normal;
-        display: inline-block;
-        line-height: 1;
-        -webkit-font-smoothing: antialiased;
-        text-decoration: none;
-        font-size: var(--close-icon-size);
-        width: var(--close-icon-size);
-        height: var(--close-icon-size);
-        content: "\f081";
-      }
       position: absolute;
       top: 1px;
       right: 10px;
@@ -156,4 +147,139 @@
   &.hidden {
     display: none;
   }
+}
+
+/* Both close surfaces use the same glyph; themes size and decorate the button. */
+.tab-bar .tab .close-icon::before,
+.dock-tab-close > .close-icon::before {
+  font-family: "Octicons Regular";
+  font-weight: normal;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  text-decoration: none;
+  font-size: var(--close-icon-size, 12px);
+  width: var(--close-icon-size, 12px);
+  height: var(--close-icon-size, 12px);
+  content: "\f081";
+}
+
+/* Geometry belongs to tabs; themes supply compact tab colors and surfaces. */
+:root .tab-bar.icons-only[location] {
+  --dock-tab-size: max(32px, var(--ui-tab-height));
+  margin-inline-end: var(--dock-tab-size);
+  overflow: auto hidden;
+
+  .tab,
+  .tab.active {
+    box-sizing: border-box;
+    flex: 0 0 var(--dock-tab-size);
+    width: var(--dock-tab-size);
+    min-width: var(--dock-tab-size);
+    max-width: var(--dock-tab-size);
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+
+    .title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: calc(100% - 2 * var(--dock-tab-inset, 0px));
+      margin: var(--dock-tab-inset, 0px);
+      padding: 0;
+      overflow: hidden;
+      text-align: center;
+      border-radius: var(--dock-tab-border-radius, 0px);
+
+      > .tab-label {
+        display: none;
+      }
+
+      &::before,
+      > .icon-glyph,
+      > .icon-letter-glyph {
+        flex: none;
+        margin: 0;
+      }
+
+      /* Items without an icon provider still need a visible activation target. */
+      &:not(.icon)::before {
+        content: "\f011";
+        font-family: "Octicons Regular";
+        font-size: var(--ui-icon-size);
+        font-weight: normal;
+        font-style: normal;
+        width: var(--ui-icon-size);
+        height: var(--ui-icon-size);
+        line-height: var(--ui-icon-size);
+      }
+    }
+
+    /* An X must not replace the small activation target on hover. */
+    .close-icon {
+      display: none;
+    }
+
+    &[data-file-state="modified"] .tab-status,
+    &[data-file-state="conflicted"] .tab-status,
+    &[data-file-state="removed"] .tab-status {
+      display: block;
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      bottom: auto;
+      margin: 0;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--tab-file-state-color);
+      pointer-events: none;
+    }
+  }
+
+  /* The theme's active icon color supplies selection; omit its title-tab marker. */
+  .tab::before {
+    display: none;
+  }
+}
+
+/* The shared action lives outside the scrollable tab list, so overflow and
+   drag placeholders cannot move it or pass tabs underneath its hit target. */
+:root lumine-pane > .dock-tab-close {
+  appearance: none;
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: max(32px, var(--ui-tab-height));
+  height: var(--ui-tab-height);
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  border: 0;
+  cursor: default;
+  -webkit-user-drag: none;
+
+  &[hidden] {
+    display: none;
+  }
+
+  > .close-icon {
+    opacity: 0;
+  }
+}
+
+:root lumine-pane > .tab-bar.icons-only:is(:hover, :focus-within) ~ .dock-tab-close > .close-icon,
+:root lumine-pane > .dock-tab-close:is(:hover, :focus-visible) > .close-icon {
+  opacity: 1;
 }

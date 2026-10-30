@@ -32,6 +32,22 @@
     "format:check": "prettier --check ."
   },
   "configSchema": {
+    "dockTabsMode": {
+      "title": "Dock Tabs Mode",
+      "description": "Display tabs in the left, right and bottom docks as standard tabs or compact icons. Icon mode always shows icons, keeps names in tooltips and reveals a shared close button when hovering over the tab bar.",
+      "type": "string",
+      "enum": [
+        {
+          "value": "titles",
+          "description": "Standard tabs"
+        },
+        {
+          "value": "icons",
+          "description": "Icons"
+        }
+      ],
+      "default": "titles"
+    },
     "showIcons": {
       "title": "Show Icons",
       "description": "Show icons in tabs for panes which define an icon, such as the Settings and Project Find Results.",

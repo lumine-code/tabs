@@ -1,18 +1,18 @@
 {
   "title": "tabs",
   "description": "Switch between open source, project notes and metadata.",
-  "recordedOn": "2026-10-14",
-  "sourceRevision": "deea9cd02f9dae49fa15df6d8894f5742444c45b",
-  "themeSourceRevision": "7fbd047a87ecf1367c896b19ff270cdc28d319f7",
+  "recordedOn": "2026-10-30",
+  "sourceRevision": "b7cc92afdd046a344c74627eb18e6a9feb2a71b0",
+  "themeSourceRevision": "543b6786cc6eed20334c381eb322fc06e00a67b0",
   "mode": "normal",
   "fontSettings": "default",
   "scenario": "demo.js",
-  "recipeHash": "a2ce0b8d8dc8b2a74aa01de16ad276d632156943939155cf55f82427c211cd1e",
+  "recipeHash": "92df21f1de57d0e552a5f72cbe8c4f443522899647e69d5083b67303078c8d72",
   "environment": {
     "platform": "win32",
     "arch": "x64",
-    "electron": "44.7.0",
-    "chrome": "152.0.7977.130",
+    "electron": "45.0.0",
+    "chrome": "156.0.8078.48",
     "devicePixelRatio": 1,
     "locale": "en-GB",
     "fontFamily": "Fira Code, Menlo, DejaVu Sans Mono, Consolas, monospace",
@@ -21,36 +21,52 @@
   },
   "viewport": { "width": 1200, "height": 760 },
   "cornerRadius": 10,
+  "privacy": { "version": 1, "location": "neutral", "textChecked": true },
   "sources": {
     "editor": {
-      "revision": "8be8f86075ad93df038610d82b3ac6d99329957d",
+      "revision": "ea115a7144a62d57080c5c56f3b4e6eed8ed89bc",
       "dirty": true,
-      "workingTreeHash": "0a9458f6e3959fe7a52b2fec76abef27dcbaa9792f192b81ac1e3f6b2be82009"
+      "workingTreeHash": "7739e7077b43ac8e2b3581b9960d1310fd4edee7745e9edf5f347ee8b04dc38a"
     },
     "package": {
-      "revision": "deea9cd02f9dae49fa15df6d8894f5742444c45b",
+      "revision": "b7cc92afdd046a344c74627eb18e6a9feb2a71b0",
+      "dirty": true,
+      "workingTreeHash": "6cce4b2609e9b124efe96294348a79c9406f20a13238c7ffefd80a5e2af196c3"
+    },
+    "tabs": {
+      "revision": "b7cc92afdd046a344c74627eb18e6a9feb2a71b0",
+      "dirty": true,
+      "workingTreeHash": "6cce4b2609e9b124efe96294348a79c9406f20a13238c7ffefd80a5e2af196c3"
+    },
+    "git-panel": {
+      "revision": "d0383f58a28cd6079854d0b428f90a99a6dfe76e",
       "dirty": false,
       "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
     },
-    "tabs": {
-      "revision": "deea9cd02f9dae49fa15df6d8894f5742444c45b",
+    "language-gfm": {
+      "revision": "e2eca2b15d854161c670e5b8815ad48e636957b7",
       "dirty": false,
       "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
     },
     "language-javascript": {
-      "revision": "ae2e6968e3a349fb4d09ce53e339a0f8cce903aa",
+      "revision": "bf635d04bbf9cf42239552df5455644c59b64b06",
+      "dirty": false,
+      "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "navigation-panel": {
+      "revision": "b6cd459e62bf18f43c65ac082ceef2fc6098f872",
       "dirty": false,
       "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
     },
     "one-theme": {
-      "revision": "7fbd047a87ecf1367c896b19ff270cdc28d319f7",
-      "dirty": false,
-      "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "revision": "543b6786cc6eed20334c381eb322fc06e00a67b0",
+      "dirty": true,
+      "workingTreeHash": "265c7b7f96261f94abf4819e2db4272ac3a96fea2cb26366ca166f3ba01e3c18"
     },
     "tree-view": {
-      "revision": "fe6f35de06f036837aa9c2d3b138b3d72557bcc4",
-      "dirty": false,
-      "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "revision": "fa9abd3e18542ebc4bb850b7b46597d6b3c87155",
+      "dirty": true,
+      "workingTreeHash": "feefdff8db86031c0ce31f6d085f9c0afae312a702e5e16b169a971b47a6366c"
     }
   },
   "fixtures": [
@@ -81,7 +97,14 @@
       "label": "Switch between open source, project notes and metadata.",
       "width": 1200,
       "height": 760,
-      "sha256": "70202f8ccc2e701b21c437ff91df773b6c2db73364e1d5b808de4f1b585d63cc"
+      "sha256": "ca38577858ac87c6b4886c58ae7bbb1026ced45c58cb8fc06a07de0da2dd55a4"
+    },
+    {
+      "file": "demo-dock-icons.png",
+      "label": "Keep dock tools in a compact icon strip while source tabs retain their titles.",
+      "width": 1200,
+      "height": 760,
+      "sha256": "8f4b13a0de616627899ad3a8261615e9af8521233adf908fb2c896183e267248"
     }
   ]
 }

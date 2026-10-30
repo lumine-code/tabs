@@ -7,6 +7,7 @@ Fork of [pulsar-edit/pulsar](https://github.com/pulsar-edit/pulsar) (`packages/t
 ## Features
 
 - **Per-pane tabs**: shows a tab bar with a tab for every open editor and item in each pane.
+- **Compact docks**: optionally presents left, right and bottom dock tabs as icons with name tooltips and theme-aware selection and hover states.
 - **Tab management**: close a single tab, other tabs, saved tabs, every tab in a pane, or every tab throughout the workspace.
 - **Tab ordering**: move a tab one position left or right within its pane.
 - **Split from a tab**: open a second copy of a tab up, down, left, or right in a new pane.
@@ -15,6 +16,8 @@ Fork of [pulsar-edit/pulsar](https://github.com/pulsar-edit/pulsar) (`packages/t
 - **File status coloring**: combine Git status with unsaved edits to tracked files, honoring Git ignore rules and undo before saving.
 
 ![Switch between open source, project notes and metadata.](.github/demo.png)
+
+![Keep dock tools in a compact icon strip while source tabs retain their titles.](.github/demo-dock-icons.png)
 
 ## Installation
 
