@@ -2,8 +2,8 @@
   "title": "tabs",
   "description": "Switch between open source, project notes and metadata.",
   "recordedOn": "2026-10-30",
-  "sourceRevision": "b7cc92afdd046a344c74627eb18e6a9feb2a71b0",
-  "themeSourceRevision": "543b6786cc6eed20334c381eb322fc06e00a67b0",
+  "sourceRevision": "4bdf6176a2c1ca1333563bb5086ccfef356f4a0d",
+  "themeSourceRevision": "484213c82bbf567e2cb7cd5f85c5d73965346809",
   "mode": "normal",
   "fontSettings": "default",
   "scenario": "demo.js",
@@ -24,19 +24,19 @@
   "privacy": { "version": 1, "location": "neutral", "textChecked": true },
   "sources": {
     "editor": {
-      "revision": "ea115a7144a62d57080c5c56f3b4e6eed8ed89bc",
+      "revision": "da1fe78142f396c784aa18569cfd04ba7719fb09",
       "dirty": true,
       "workingTreeHash": "7739e7077b43ac8e2b3581b9960d1310fd4edee7745e9edf5f347ee8b04dc38a"
     },
     "package": {
-      "revision": "b7cc92afdd046a344c74627eb18e6a9feb2a71b0",
+      "revision": "4bdf6176a2c1ca1333563bb5086ccfef356f4a0d",
       "dirty": true,
-      "workingTreeHash": "6cce4b2609e9b124efe96294348a79c9406f20a13238c7ffefd80a5e2af196c3"
+      "workingTreeHash": "84da9d5b8dc804c2597523894b4392e5ed0bb68ec7a4042dd9af06eeca75010c"
     },
     "tabs": {
-      "revision": "b7cc92afdd046a344c74627eb18e6a9feb2a71b0",
+      "revision": "4bdf6176a2c1ca1333563bb5086ccfef356f4a0d",
       "dirty": true,
-      "workingTreeHash": "6cce4b2609e9b124efe96294348a79c9406f20a13238c7ffefd80a5e2af196c3"
+      "workingTreeHash": "84da9d5b8dc804c2597523894b4392e5ed0bb68ec7a4042dd9af06eeca75010c"
     },
     "git-panel": {
       "revision": "d0383f58a28cd6079854d0b428f90a99a6dfe76e",
@@ -54,14 +54,14 @@
       "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
     },
     "navigation-panel": {
-      "revision": "b6cd459e62bf18f43c65ac082ceef2fc6098f872",
-      "dirty": false,
-      "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      "revision": "075cf9ca1e201e81325bdc9bb5fa4b45d5d7b3c6",
+      "dirty": true,
+      "workingTreeHash": "294da1ef580e99133465abe26d7d37020da60ba37e56f0cb5a67b13d1fb29aec"
     },
     "one-theme": {
-      "revision": "543b6786cc6eed20334c381eb322fc06e00a67b0",
-      "dirty": true,
-      "workingTreeHash": "265c7b7f96261f94abf4819e2db4272ac3a96fea2cb26366ca166f3ba01e3c18"
+      "revision": "484213c82bbf567e2cb7cd5f85c5d73965346809",
+      "dirty": false,
+      "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
     },
     "tree-view": {
       "revision": "fa9abd3e18542ebc4bb850b7b46597d6b3c87155",
@@ -97,14 +97,14 @@
       "label": "Switch between open source, project notes and metadata.",
       "width": 1200,
       "height": 760,
-      "sha256": "ca38577858ac87c6b4886c58ae7bbb1026ced45c58cb8fc06a07de0da2dd55a4"
+      "sha256": "0a1216d2ffa8e15f1bffc4bf3478c5db631e02ce0114a52e19ea6d37476e8db6"
     },
     {
       "file": "demo-dock-icons.png",
       "label": "Keep dock tools in a compact icon strip while source tabs retain their titles.",
       "width": 1200,
       "height": 760,
-      "sha256": "8f4b13a0de616627899ad3a8261615e9af8521233adf908fb2c896183e267248"
+      "sha256": "c6245f5545fcdc43738f62dc9c127a84048656ad750811d0794d99455b3228dd"
     }
   ]
 }
