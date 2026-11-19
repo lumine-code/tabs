@@ -27,8 +27,8 @@ describe("GitStatusUpdateScheduler", () => {
     const firstUpdate = jasmine.createSpy("firstUpdate");
     const secondUpdate = jasmine.createSpy("secondUpdate");
 
-    scheduler.subscribe(repository, firstUpdate);
-    scheduler.subscribe(repository, secondUpdate);
+    scheduler.subscribe(repository, "first", firstUpdate);
+    scheduler.subscribe(repository, "second", secondUpdate);
 
     expect(repository.onDidChangeStatusSnapshot.calls.count()).toBe(1);
     expect(firstUpdate).not.toHaveBeenCalled();
@@ -43,7 +43,7 @@ describe("GitStatusUpdateScheduler", () => {
 
   it("limits the work performed in one renderer turn", () => {
     const updates = Array.from({ length: 5 }, (_, index) => jasmine.createSpy(`update-${index}`));
-    updates.forEach((update) => scheduler.subscribe(repository, update));
+    updates.forEach((update, index) => scheduler.subscribe(repository, String(index), update));
 
     runNextTask();
 
@@ -60,7 +60,7 @@ describe("GitStatusUpdateScheduler", () => {
 
   it("coalesces repeated snapshots while an update is pending", () => {
     const update = jasmine.createSpy("update");
-    scheduler.subscribe(repository, update);
+    scheduler.subscribe(repository, "file", update);
 
     repository.emitStatusSnapshot();
     repository.emitStatusSnapshot();
@@ -73,8 +73,8 @@ describe("GitStatusUpdateScheduler", () => {
   it("removes pending work and the shared listener when the last tab leaves", () => {
     const firstUpdate = jasmine.createSpy("firstUpdate");
     const secondUpdate = jasmine.createSpy("secondUpdate");
-    const firstSubscription = scheduler.subscribe(repository, firstUpdate);
-    const secondSubscription = scheduler.subscribe(repository, secondUpdate);
+    const firstSubscription = scheduler.subscribe(repository, "first", firstUpdate);
+    const secondSubscription = scheduler.subscribe(repository, "second", secondUpdate);
 
     firstSubscription.dispose();
     runNextTask();
@@ -85,5 +85,33 @@ describe("GitStatusUpdateScheduler", () => {
 
     secondSubscription.dispose();
     expect(repositorySubscription.dispose).toHaveBeenCalled();
+  });
+
+  it("queues only changed paths and descendants of an affected ignore prefix", () => {
+    repository.getStatusPathKey = (filePath) => filePath;
+    repository.onDidChangeStatusPaths = (callback) => {
+      repository.emitStatusPaths = callback;
+      return repositorySubscription;
+    };
+    const changed = jasmine.createSpy("changed");
+    const nested = jasmine.createSpy("nested");
+    const unchanged = jasmine.createSpy("unchanged");
+    scheduler.subscribe(repository, "src/file.js", changed);
+    scheduler.subscribe(repository, "build/nested/file.js", nested);
+    scheduler.subscribe(repository, "build-tools/file.js", unchanged);
+    while (scheduledTasks.length) runNextTask();
+    [changed, nested, unchanged].forEach((update) => update.calls.reset());
+
+    repository.emitStatusPaths({
+      files: ["src/file.js"],
+      ignoredFiles: [],
+      ignoredDirectories: [],
+    });
+    repository.emitStatusPaths({ files: [], ignoredFiles: [], ignoredDirectories: ["build"] });
+    while (scheduledTasks.length) runNextTask();
+
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(nested).toHaveBeenCalledTimes(1);
+    expect(unchanged).not.toHaveBeenCalled();
   });
 });
